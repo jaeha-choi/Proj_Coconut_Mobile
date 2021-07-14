@@ -2,6 +2,19 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <key>UIBackgroundModes</key>
+    <array>
+       <string>fetch</string>
+       <string>remote-notification</string>
+    </array>
+    <key>NSAppleMusicUsageDescription</key>
+    <string>Explain why your app uses music</string>
+    <key>UISupportsDocumentBrowser</key>
+    <bool>true</bool>
+    <key>LSSupportsOpeningDocumentsInPlace</key>
+    <bool>true</bool>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Explain why your app uses photo library</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleExecutable</key>

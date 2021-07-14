@@ -22,6 +22,9 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.blue,
       ),
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+      ),
       home: MyHomePage(title: 'Flutter Demo Home Page'),
     );
   }
@@ -103,6 +106,7 @@ class _MyHomePageState extends State<MyHomePage> {
           ],
         ),
       ),
+
       floatingActionButton: FloatingActionButton(
         onPressed: _incrementCounter,
         tooltip: 'Increment',
