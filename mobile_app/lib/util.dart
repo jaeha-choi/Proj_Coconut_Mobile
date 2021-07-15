@@ -7,12 +7,11 @@ const int bufferSize = 4096;
 String tempPath;
 List<File> files;
 
-
 void getFile() async {
   Directory tempDir = await getTemporaryDirectory();
   tempPath = tempDir.path;
-  FilePickerResult result = await FilePicker.platform
-      .pickFiles(allowMultiple: true, type: FileType.any);
+  FilePickerResult result =
+      await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
 
   if (result != null) {
     files = result.paths.map((path) => File(path)).toList();
@@ -34,10 +33,7 @@ List readString(RawSocket reader) {
 
   // ReadString always expect the size to be <= bufferSize
   if (size > bufferSize) {
-    print("String size cannot be greater than " +
-        bufferSize.toString() +
-        ". String size: " +
-        size);
+    print("String size cannot be greater than " + bufferSize.toString() + ". String size: " + size);
     return ["", false];
   }
 
