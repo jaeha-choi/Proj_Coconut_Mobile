@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'main.dart';
+import 'select_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 
@@ -41,7 +41,7 @@ class _FrontPageState extends State<FrontPage> {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => MyHomePage()),
+                          MaterialPageRoute(builder: (context) => SelectPage()),
                         );
                       },
                       child: Text(
