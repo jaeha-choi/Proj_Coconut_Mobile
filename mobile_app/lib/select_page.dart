@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'util.dart';
 
 class SelectPage extends StatefulWidget {
   SelectPage({Key key, this.title}) : super(key: key);
@@ -22,29 +23,91 @@ class SelectPage extends StatefulWidget {
 }
 
 class _MySelectPageState extends State<SelectPage> {
-
   String tempPath;
   List<File> files;
+  final myController = TextEditingController();
 
   // getFile gets any types of files (single or multiple) from devices (android and iPhone)
   void getFile() async {
     Directory tempDir = await getTemporaryDirectory();
     tempPath = tempDir.path;
-    FilePickerResult result =
-    await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
+    FilePickerResult result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
 
     if (result != null) {
       files = result.paths.map((path) => File(path)).toList();
-      print(files);
       setState(() {});
     } else {
-      print("Error while getting file from user");
       // User canceled the picker
+    }
+    //TODO erase print
+    print(files);
+  }
+
+  Future getImage() async {
+    Directory tempDir = await getTemporaryDirectory();
+    tempPath = tempDir.path;
+    FilePickerResult result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.image);
+    if (result != null) {
+      files = result.paths.map((path) => File(path)).toList();
+      setState(() {});
+    } else {
+      // User canceled the picker
+    }
+    print(files);
+  }
+
+  RawSocket socket;
+
+  void connects_to_socket() async {
+    try {
+      socket = await RawSocket.connect('143.198.234.58', 1234);
+    } on SocketException catch (e) {
+      // print("Could not connect to the server:");
+      print(e);
     }
   }
 
+  Future sendFile() async {
+    /*
+    :return: Received data in bytes. None if not all bytes were received.
+     */
+    connects_to_socket();
+    print(socket);
+    print('connected');
+
+    // serverSaveNames are file names ex) ['cat.jpeg', 'dog.png', 'eng 101.doc']
+    List<String> serverSaveNames = [];
+    String localName;
+
+    for (int i = 0; i < files.length; i++) {
+      localName = files[i].path;
+      print(localName.substring(localName.lastIndexOf('/') + 1, localName.length ));
+      serverSaveNames.add(localName.substring(localName.lastIndexOf('/') + 1, localName.length));
+    }
+
+    writeFileBin(socket, files, serverSaveNames);
+  }
+
+
+  Future writeFileBin(RawSocket conn, List<File> files, List<String> serverSaveNames) {
+    for (int i = 0; i < serverSaveNames.length; i++) {
+      writeString(conn, serverSaveNames[i]);
+      writeBinary(conn, files[i]);
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
+    int itemCount;
+    connects_to_socket();
+
+    if (files == null) {
+      itemCount = 0;
+    } else {
+      itemCount = files.length;
+    }
+
     // This method is rerun every time setState is called, for instance as done
     // by the _incrementCounter method above.
     //
@@ -53,21 +116,128 @@ class _MySelectPageState extends State<SelectPage> {
     // than having to individually change instances of widgets.
     return Scaffold(
       body: Container(
-          decoration: BoxDecoration(
-            color: Colors.black,
-          ),
-          child: Column(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: <Widget>[
+        decoration: BoxDecoration(
+          color: Colors.brown,
+        ),
+        child: Column(
+          // Center is a layout widget. It takes a single child and positions it
+          // in the middle of the parent.
+          children: <Widget>[
+            itemCount > 0
+                ? Padding(
+                padding: EdgeInsets.fromLTRB(0, 30, 200, 5),
+                child: Text(
+                  'connect_ME',
+                  style: TextStyle(fontSize: 30),
+                ))
+                : Spacer(),
+            Container(
+              height: 300,
+              width: 400,
+              child: itemCount > 0
+                  ? ListView.builder(
+                shrinkWrap: true,
+                itemCount: itemCount,
+                itemBuilder: (BuildContext context, int index) {
+                  return ListTile( //TODO need to implement delete file from file list
+                      title: Text(files[index].toString().substring(
+                          files[index].toString().lastIndexOf('/') + 1,
+                          files[index]
+                              .toString()
+                              .length - 1)));
+                },
+              )
+                  : Center(
+                  child: Text(
+                    'connect_ME',
+                    style: TextStyle(fontSize: 11),
+                  )),
+            ),
+            // Center(
+            //     child: Column(
+            //       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            //       children: <Widget>[
+            //         // InkWell(
+            //         //   child: Text(
+            //         //     "Your Unique ID (Tap to copy)",
+            //         //     style: TextStyle(fontSize: 17),
+            //         //   ),
+            //         //   onTap: () {
+            //         //     // Copy uuid to clipboard
+            //         //     Clipboard.setData(new ClipboardData(text: uid));
+            //         //   },
+            //         // ),
+            //         // Container(
+            //         //     child: Padding(
+            //         //         padding: EdgeInsets.fromLTRB(0, 5, 0, 5),
+            //         //         child: InkWell(
+            //         //           child: Text(
+            //         //             uid,
+            //         //             style: TextStyle(fontSize: 17, backgroundColor: Colors.white12),
+            //         //           ),
+            //         //           onTap: () {
+            //         //             // Copy uuid to clipboard
+            //         //             Clipboard.setData(new ClipboardData(text: uid));
+            //         //           },
+            //         //         ))),
+            //         // Padding(
+            //         //   padding: EdgeInsets.all(9),
+            //         //   child: SizedBox(
+            //         //     width: 300.0,
+            //         //     height: 80.0,
+            //         //     child: TextField(
+            //         //       controller: myController,
+            //         //       obscureText: false,
+            //         //       decoration: InputDecoration(
+            //         //         border: OutlineInputBorder(
+            //         //           borderRadius: BorderRadius.all(
+            //         //             const Radius.circular(12.0),
+            //         //           ),
+            //         //         ),
+            //         //         labelText: "Receiver Unique ID",
+            //         //         labelStyle: TextStyle(color: Colors.white.withOpacity(0.8)),
+            //         //       ),
+            //         //     ),
+            //         //   ),
+            //         // )
+            //       ],
+            //     )),
+
             Center(
-              child: Row(
-                children: <Widget>[
-                  ElevatedButton(child: Text("Select Files"), onPressed: getFile),
-                  // ElevatedButton(
-                  //   child: Text("Send Files"), onPressed: readString(reader),
-                  // )
-                ],
-              ),
-            )
-          ])),
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(0, 20, 0, 0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: <Widget>[
+                      // Spacer(),
+                      ElevatedButton(
+                        child: Text("Select Files"),
+                        onPressed: getFile,
+                        style: ElevatedButton.styleFrom(
+                            primary: Colors.white12,
+                            textStyle: TextStyle(fontSize: 25, fontWeight: FontWeight.bold)),
+                      ),
+                      ElevatedButton(
+                        child: Text("Select Images"),
+                        onPressed: getImage,
+                        style: ElevatedButton.styleFrom(
+                            primary: Colors.white12,
+                            textStyle: TextStyle(fontSize: 25, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                )),
+            ElevatedButton(
+              child: Text("Send File"),
+              onPressed: sendFile,
+              style: ElevatedButton.styleFrom(
+                  primary: Colors.purple, textStyle: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
+            ),
+            Spacer(),
+          ],
+        ),
+      ),
+      resizeToAvoidBottomInset: false,
     );
   }
 }
