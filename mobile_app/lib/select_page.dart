@@ -1,7 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:path_provider/path_provider.dart';
+
+// import 'package:path_provider/path_provider.dart';
 import 'util.dart';
 
 class SelectPage extends StatefulWidget {
@@ -23,37 +24,51 @@ class SelectPage extends StatefulWidget {
 }
 
 class _MySelectPageState extends State<SelectPage> {
-  String tempPath;
-  List<File> files;
+  // String tempPath;
+  List<File> filePath;
+  final files = new Map();
   final myController = TextEditingController();
 
   // getFile gets any types of files (single or multiple) from devices (android and iPhone)
   void getFile() async {
-    Directory tempDir = await getTemporaryDirectory();
-    tempPath = tempDir.path;
     FilePickerResult result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
 
     if (result != null) {
-      files = result.paths.map((path) => File(path)).toList();
-      setState(() {});
+      filePath = result.paths.map((path) => File(path)).toList();
+      String localName;
+      String key;
+      for (int i = 0; i < filePath.length; i++) {
+        localName = filePath[i].path;
+        key = localName.substring(localName.lastIndexOf("/") + 1, localName.length);
+
+        // no collision from key
+        files.putIfAbsent(key, () => filePath[i]);
+        setState(() {});
+      }
     } else {
       // User canceled the picker
     }
-    //TODO erase print
-    print(files);
   }
 
   Future getImage() async {
-    Directory tempDir = await getTemporaryDirectory();
-    tempPath = tempDir.path;
     FilePickerResult result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.image);
     if (result != null) {
-      files = result.paths.map((path) => File(path)).toList();
-      setState(() {});
+      filePath = result.paths.map((path) => File(path)).toList();
+      String localName;
+      String key;
+
+      for (int i = 0; i < filePath.length; i++) {
+        localName = filePath[i].path;
+        key = localName.substring(localName.lastIndexOf("/") + 1, localName.length);
+
+        // no collision from key
+        files.putIfAbsent(key, () => filePath[i]);
+        setState(() {});
+      }
     } else {
       // User canceled the picker
     }
-    print(files);
+    // files.forEach((k,v) => print('${k}: ${v}'));
   }
 
   RawSocket socket;
@@ -62,7 +77,6 @@ class _MySelectPageState extends State<SelectPage> {
     try {
       socket = await RawSocket.connect('143.198.234.58', 1234);
     } on SocketException catch (e) {
-      // print("Could not connect to the server:");
       print(e);
     }
   }
@@ -76,26 +90,23 @@ class _MySelectPageState extends State<SelectPage> {
     print('connected');
 
     // serverSaveNames are file names ex) ['cat.jpeg', 'dog.png', 'eng 101.doc']
-    List<String> serverSaveNames = [];
-    String localName;
+    // List<String> serverSaveNames = [];
+    // String localName;
 
-    for (int i = 0; i < files.length; i++) {
-      localName = files[i].path;
-      print(localName.substring(localName.lastIndexOf('/') + 1, localName.length ));
-      serverSaveNames.add(localName.substring(localName.lastIndexOf('/') + 1, localName.length));
-    }
-
-    writeFileBin(socket, files, serverSaveNames);
+    writeFileBin(socket, files);
   }
 
+  // final Map<String, File> files = {};
 
-  Future writeFileBin(RawSocket conn, List<File> files, List<String> serverSaveNames) {
-    for (int i = 0; i < serverSaveNames.length; i++) {
-      writeString(conn, serverSaveNames[i]);
-      writeBinary(conn, files[i]);
+  Future writeFileBin(RawSocket conn, Map files) {
+    // files.forEach((k,v) => writeString(conn, k) );
+    // files.forEach((k,v) =>  writeBinary(conn, v) );
+
+    for (var k in files.keys) {
+      writeString(conn, k);
+      writeBinary(conn, files[k]);
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -125,33 +136,30 @@ class _MySelectPageState extends State<SelectPage> {
           children: <Widget>[
             itemCount > 0
                 ? Padding(
-                padding: EdgeInsets.fromLTRB(0, 30, 200, 5),
-                child: Text(
-                  'connect_ME',
-                  style: TextStyle(fontSize: 30),
-                ))
+                    padding: EdgeInsets.fromLTRB(0, 30, 200, 5),
+                    child: Text(
+                      'connect_ME',
+                      style: TextStyle(fontSize: 30),
+                    ))
                 : Spacer(),
             Container(
               height: 300,
               width: 400,
               child: itemCount > 0
                   ? ListView.builder(
-                shrinkWrap: true,
-                itemCount: itemCount,
-                itemBuilder: (BuildContext context, int index) {
-                  return ListTile( //TODO need to implement delete file from file list
-                      title: Text(files[index].toString().substring(
-                          files[index].toString().lastIndexOf('/') + 1,
-                          files[index]
-                              .toString()
-                              .length - 1)));
-                },
-              )
+                      shrinkWrap: true,
+                      itemCount: itemCount,
+                      itemBuilder: (BuildContext context, int index) {
+                        return ListTile(
+                            //TODO need to implement delete file from file list
+                            title: Text(files.keys.toList()[index]));
+                      },
+                    )
                   : Center(
-                  child: Text(
-                    'connect_ME',
-                    style: TextStyle(fontSize: 11),
-                  )),
+                      child: Text(
+                      'connect_ME',
+                      style: TextStyle(fontSize: 11),
+                    )),
             ),
             // Center(
             //     child: Column(
@@ -205,28 +213,28 @@ class _MySelectPageState extends State<SelectPage> {
 
             Center(
                 child: Padding(
-                  padding: EdgeInsets.fromLTRB(0, 20, 0, 0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: <Widget>[
-                      // Spacer(),
-                      ElevatedButton(
-                        child: Text("Select Files"),
-                        onPressed: getFile,
-                        style: ElevatedButton.styleFrom(
-                            primary: Colors.white12,
-                            textStyle: TextStyle(fontSize: 25, fontWeight: FontWeight.bold)),
-                      ),
-                      ElevatedButton(
-                        child: Text("Select Images"),
-                        onPressed: getImage,
-                        style: ElevatedButton.styleFrom(
-                            primary: Colors.white12,
-                            textStyle: TextStyle(fontSize: 25, fontWeight: FontWeight.bold)),
-                      ),
-                    ],
+              padding: EdgeInsets.fromLTRB(0, 20, 0, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: <Widget>[
+                  // Spacer(),
+                  ElevatedButton(
+                    child: Text("Select Files"),
+                    onPressed: getFile,
+                    style: ElevatedButton.styleFrom(
+                        primary: Colors.white12,
+                        textStyle: TextStyle(fontSize: 25, fontWeight: FontWeight.bold)),
                   ),
-                )),
+                  ElevatedButton(
+                    child: Text("Select Images"),
+                    onPressed: getImage,
+                    style: ElevatedButton.styleFrom(
+                        primary: Colors.white12,
+                        textStyle: TextStyle(fontSize: 25, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            )),
             ElevatedButton(
               child: Text("Send File"),
               onPressed: sendFile,

@@ -6,10 +6,6 @@ import 'dart:typed_data';
 const int bufferSize = 4096;
 
 
-
-
-
-
 // readSize reads first 4 bytes from the reader and convert them into a uint32 value
 //
 // return [uint32, error (bool)]
@@ -32,7 +28,7 @@ List readSize(RawSocket reader) {
 //
 // returns <[] bytes, error>
 List readNBytes(RawSocket reader, int n) {
-  Uint8List data = reader.read(n);
+  Uint8List data = reader.read(n); // store in file
   if (data == null) {
     print("Error while reading bytes");
     return [-1, false];
@@ -90,6 +86,8 @@ Future<List> writeBinary(RawSocket conn, File file) async {
   var sizeInByte = uint32ToByte(await file.length());
   try {
     conn.write(sizeInByte);
+    print(file.readAsBytes());
+    print("reading file size (Bytes):  ${file.readAsBytes()}");
     conn.write(await file.readAsBytes());
   } catch (error) {
     print("Unknown error in send_bin" + error);
