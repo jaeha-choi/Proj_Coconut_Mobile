@@ -28,6 +28,8 @@ class _MySelectPageState extends State<SelectPage> {
   List<File> filePath;
   final files = new Map();
   final myController = TextEditingController();
+  RawSocket socket;
+
 
   // getFile gets any types of files (single or multiple) from devices (android and iPhone)
   void getFile() async {
@@ -71,9 +73,8 @@ class _MySelectPageState extends State<SelectPage> {
     // files.forEach((k,v) => print('${k}: ${v}'));
   }
 
-  RawSocket socket;
 
-  void connects_to_socket() async {
+  void connectsToSocket() async {
     try {
       socket = await RawSocket.connect('143.198.234.58', 1234);
     } on SocketException catch (e) {

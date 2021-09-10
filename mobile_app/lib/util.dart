@@ -139,3 +139,14 @@ List readNString(RawSocket reader, int n) {
   Uint8List buffer = readNBytes(reader, n);
   return [buffer, true];
 }
+
+
+void connects_to_socket() async {
+  try {
+    RawSocket socket = await RawSocket.connect('143.198.234.58', 1234);
+    print(socket);
+  } on SocketException catch (e) {
+    print(e);
+  }
+
+}
