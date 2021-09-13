@@ -142,8 +142,7 @@ Client newClient() {
     RSAPrivateKey privateKey = parsePrivateKeyFromPem(priv);
     // Print number of bytes in the key, we could obviously also pass it to
     // another library to use the key.
-
-    // print('private key contains ${privateKeydata.length} bytes');
+    // print('private key contains ${privateKey.length} bytes');
 
     Client client = new Client(
       serverIP: "127.0.0.1",
@@ -174,11 +173,17 @@ Future<void> createPemFile() async {
   await File('key.pub').writeAsString(encodePublicKeyToPemPKCS1(rsaPublic));
 }
 
-void connect(Socket conn, Client client) {
-  SecureSocket.secure(conn);
+/// Insecure SKip verify: Sets to false, which means client is not verifying the server's certificate chain and host name
+void connect( Client client) async{
+  // Socket socket = await Socket.connect(client.serverIP, client.serverPort);
+  // X509Certificate certificate;
+  SecureSocket.startConnect(client.serverIP, client.serverPort);
+  // SecureSocket.secure(socket);
 }
 
 void main() {
-  newClient();
+  Client client = newClient();
+  print(client);
+  connect(client);
 
 }

@@ -2,6 +2,8 @@ import 'dart:convert';
 import "package:asn1lib/asn1lib.dart";
 import "package:pointycastle/export.dart";
 
+/// https://github.com/Vanethos/flutter_rsa_generator_example/blob/64eb00b00d85f122c7e94f7c17bcdbe3a0450d59/lib/utils/rsa_key_helper.dart#L192
+/// https://medium.com/flutter-community/asymmetric-key-generation-in-flutter-ad2b912f3309
 String removePemHeaderAndFooter(String pem) {
   var startsWith = [
     "-----BEGIN PUBLIC KEY-----",
