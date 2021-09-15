@@ -38,6 +38,7 @@ dependencies:
   rsa_encrypt: ^2.0.0
   asn1lib: ^1.0.2
   logger: ^0.6.0
+  crypto: ^3.0.1
 dev_dependencies:
   flutter_test:
     sdk: flutter

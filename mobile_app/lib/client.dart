@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:asn1lib/asn1lib.dart';
 import 'package:logger/logger.dart';
 import "package:pointycastle/export.dart";
@@ -6,6 +7,7 @@ import 'dart:io';
 import 'dart:core';
 import 'rsa_key_helper.dart';
 import 'logger.dart';
+import 'package:pointycastle/api.dart';
 
 final logger = Logger(printer: SimpleLogPrinter('client.dart'));
 
@@ -15,7 +17,7 @@ final logger = Logger(printer: SimpleLogPrinter('client.dart'));
 class Client {
   String serverIP; //TODO yaml?
   int serverPort; //TODO yaml?
-  RawSocket conn;
+  SecureSocket  conn;
   RSAPrivateKey privKey;
   String pubKeyBlock;
   String addCode;
@@ -23,7 +25,7 @@ class Client {
   Client({
     String serverIP,
     int serverPort,
-    RawSocket conn,
+    SecureSocket  conn,
     RSAPrivateKey privKey,
     String pubKey,
     String addCode,
@@ -106,16 +108,93 @@ Future<void> createPemFile() async {
 /// connects to a socket with TLS
 void connect(Client client) async {
   // client = newClient() as Client;
+  try {
+    logger.d('Connecting....');
+    // ConnectionTask dial1; <= TODO Return type?
+    ConnectionTask<SecureSocket> connection;
+    connection = await SecureSocket.startConnect(
+      client.serverIP,
+      client.serverPort,
+      onBadCertificate: (certificate) => true,
+    );
+    client.conn = await connection.socket;
 
-  SecureSocket.startConnect(
-    client.serverIP,
-    client.serverPort,
-    onBadCertificate: (certificate) => true,
-  );
+    // Initializing client
+    doInit(client);
+  }catch(e){
+    logger.d('Error in connect() :$e');
+  }
 }
+
+void doInit(Client client) {
+  // print(client.pubKeyBlock);
+  Uint8List pubKeyHash = PemToSha256(client.pubKeyBlock);
+  print(pubKeyHash);
+  print(client.conn);
+  writeString(client.conn, pubKeyHash);
+}
+
+/// PemToSHA256
+/// Given pubKey [String] convert it to hashString
+Uint8List PemToSha256(String pubKey)  {
+  // Convert string to byte
+  var uint8List = Uint8List.fromList(pubKey.codeUnits);
+
+  // * actual information converted into byte
+  // sha256sum always returns 32 bytes
+  var sha256 = Digest("SHA-256").process(uint8List);
+  // String hashStr = hex.encode(sha256);
+  return sha256;
+}
+
+/// WriteString writes message to writer
+/// length of message cannot exceed BufferSize
+/// returns <total bytes sent, error>
+List writeString(SecureSocket writer, Uint8List bytes) {
+  try {
+    // Convert string to byte
+    // Get size(uint32) of total bytes to send
+    var size = uint32ToByte(bytes.length);
+    logger.d( bytes.length);
+    logger.d( size);
+    // logger.d( utf8.encode(size.toString()));
+
+    writer.add(size);
+    writeErrorCode(writer);
+    logger.d(bytes);
+    writer.add(bytes);
+
+    return [size, true];
+  } catch (error) {
+    logger.d('Error in writeString() :$error');
+    return [0, false];
+  }
+}
+
+void writeErrorCode(SecureSocket writer){ // [0,0,0,0,0,0,0,0]
+  final code = Uint8List(1);// [255] = [1,1,1,1,1,1,1,1] = 8 bits = 1 byte
+  print(code);
+
+  // print(code.runtimeType);
+  // Write 1 byte of error code
+  try{
+    writer.add(code);
+
+  }catch(e){
+    logger.d('Error in writeErrorCode() :$e');
+  }
+
+
+}
+
+// Unsigned int32 to byte
+Uint8List uint32ToByte(int value) =>
+    Uint8List(4)..buffer.asByteData().setInt32(0, value, Endian.big);
 
 Future<void> main() async {
   Logger.level = Level.debug;
   Client client = await newClient();
   connect(client);
+
+
 }
