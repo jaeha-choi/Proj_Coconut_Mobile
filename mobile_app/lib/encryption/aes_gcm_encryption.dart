@@ -12,7 +12,6 @@ main() {
   final pair = generateRSAkeyPair(exampleSecureRandom());
   final public = pair.publicKey;
   final private = pair.privateKey;
-  print(public);
 
 }
 // encryptSetup opens file, determine number of chunks, and return TODO
