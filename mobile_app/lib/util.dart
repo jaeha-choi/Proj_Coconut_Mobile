@@ -31,7 +31,6 @@ Uint8List readNBytes(RawSocket reader, int n) {
   }
   return data;
 }
-
 // Byte to unsigned int32
 int byteToUint32(Uint8List value) {
   var buffer = value.buffer;

@@ -171,9 +171,9 @@
 //   return rsaPublicKey;
 // }
 //
-/// Decode Private key from PEM Format
-/// Given a base64 encoded PEM [String] with correct headers and footers, return a
-/// [RSAPrivateKey]
+// /// Decode Private key from PEM Format
+// /// Given a base64 encoded PEM [String] with correct headers and footers, return a
+// /// [RSAPrivateKey]
 // RSAPrivateKey parsePrivateKeyFromPem(pemString) {
 //   try {
 //     List<int> privateKeyDER = decodePEM(pemString);

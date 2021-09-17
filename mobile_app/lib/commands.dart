@@ -1,6 +1,5 @@
 
 
-
 const String Quit ="QUIT";
 const String RequestRelay ="RELY";
 const String EndRelay ="ERLY";
@@ -12,3 +11,7 @@ const String RequestPubKey ="RPUB";
 String command(name) {
   return name;
 }
+
+// void main() {
+//   print(command(Quit));
+// }

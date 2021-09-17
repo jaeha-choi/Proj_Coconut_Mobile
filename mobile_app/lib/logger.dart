@@ -4,6 +4,7 @@ class SimpleLogPrinter extends LogPrinter {
   final String className;
   SimpleLogPrinter(this.className);
 
+
   // logger.v('You don\'t always want to see all of these');
   // logger.d('Logs a debug message');
   // logger.i('Public Function called');
@@ -13,6 +14,7 @@ class SimpleLogPrinter extends LogPrinter {
   void log(Level level, message, error, StackTrace stackTrace) {
     var color = PrettyPrinter.levelColors[level];
     var emoji = PrettyPrinter.levelEmojis[level];
-    println(color('$emoji $className - $message'));
+    // var line = PrettyPrinter.printTime;
+    println(color('$emoji $className - $message - $stackTrace'));
   }
 }
