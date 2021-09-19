@@ -1,8 +1,11 @@
 import 'package:logger/logger.dart';
 
+
+
 class SimpleLogPrinter extends LogPrinter {
   final String className;
   SimpleLogPrinter(this.className);
+  // int method_count = PrettyPrinter.printTime;
 
 
   // logger.v('You don\'t always want to see all of these');
@@ -14,7 +17,8 @@ class SimpleLogPrinter extends LogPrinter {
   void log(Level level, message, error, StackTrace stackTrace) {
     var color = PrettyPrinter.levelColors[level];
     var emoji = PrettyPrinter.levelEmojis[level];
-    // var line = PrettyPrinter.printTime;
-    println(color('$emoji $className - $message - $stackTrace'));
+    // var count = stackTrace
+
+    println(color('$emoji $className - $message '));
   }
 }

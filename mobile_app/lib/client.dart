@@ -8,9 +8,20 @@ import 'logger.dart';
 import 'package:pointycastle/api.dart';
 import 'package:basic_utils/basic_utils.dart';
 import 'commands.dart';
+import 'socket.dart'; //TODO Erase this
 
-final logger = Logger(printer: SimpleLogPrinter('client.dart'));
+// final logger = Logger(printer: SimpleLogPrinter('client.dart'));
 
+var logger = Logger(
+  printer: PrettyPrinter(
+      methodCount: 1, // number of method calls to be displayed
+      errorMethodCount: 3, // number of method calls if stacktrace is provided
+      lineLength: 50, // width of the output
+      colors: true, // Colorful log messages
+      printEmojis: true, // Print an emoji for each log message
+      printTime: false // Should each log print contain a timestamp
+  ),
+);
 
 class Client {
   //TODO add tlsConfig?
@@ -75,7 +86,7 @@ Future<Client> newClient() async {
     );
     return client;
   } catch (e) {
-    logger.d("ERROR in Client newClient(): $e");
+    logger.e("ERROR in Client newClient(): $e");
   }
 }
 
@@ -97,7 +108,7 @@ Future<void> createPemFile() async {
     await File('key.pub')
         .writeAsString(CryptoUtils.encodeRSAPublicKeyToPemPkcs1(rsaPublic));
   } catch (e) {
-    logger.d('Error in createPemFile() $e');
+    logger.e('Error in createPemFile() $e');
   }
 }
 
@@ -105,7 +116,7 @@ Future<void> createPemFile() async {
 void connect(Client client) async {
   // client = newClient() as Client;
   try {
-    logger.d('Connecting....');
+    logger.i('Connecting....');
     // ConnectionTask dial1; <= TODO Return type?
     ConnectionTask<RawSecureSocket> connection;
     connection = await RawSecureSocket.startConnect(
@@ -115,11 +126,11 @@ void connect(Client client) async {
     );
     // Socket con = await connection.socket;
     client.conn = await connection.socket;
-    logger.i(client.conn);
+    // logger.i(client.conn);
     // Initializing client
     doInit(client);
   } catch (e) {
-    logger.d('Error in connect() :$e');
+    logger.e('Error in connect() :$e');
   }
 }
 
@@ -129,12 +140,12 @@ void doInit(Client client) {
   writeBytes(client.conn, pubKeyHash);
 
   return getResult(client.conn);
-  // return getResult()
 }
 
 void getResult(RawSecureSocket conn) {
   return readBytes(conn);
 }
+
 /// PemToSHA256
 /// Given pubKey [String] convert it to SHA256
 /// [Uint8List]
@@ -150,7 +161,7 @@ Uint8List PemToSha256(String pubKey) {
 
 /// WriteString writes message to writer TODO move to util.dart
 /// length of message cannot exceed BufferSize
-/// returns [total bytes sent, error]
+/// returns [total bytes sent]
 Uint8List writeBytes(RawSecureSocket writer, Uint8List bytes) {
   try {
     // Convert string to byte
@@ -169,7 +180,7 @@ Uint8List writeBytes(RawSecureSocket writer, Uint8List bytes) {
 
     return bytes;
   } catch (error) {
-    logger.d('Error in writeString() :$error');
+    logger.e('Error in writeString() :$error');
     return Uint8List(1);
   }
 }
@@ -181,7 +192,7 @@ void writeSize(RawSecureSocket writer, Uint8List size) {
     // Write size of the string to writer
     writer.write(size);
   } catch (e) {
-    logger.d("Error in writeSize() :$e");
+    logger.e("Error in writeSize() :$e");
   }
 }
 
@@ -193,7 +204,7 @@ void writeErrorCode(RawSecureSocket writer) {
   try {
     writer.write(code);
   } catch (e) {
-    logger.d('Error in writeErrorCode() :$e');
+    logger.e('Error in writeErrorCode() :$e');
   }
 }
 
@@ -208,20 +219,23 @@ Uint8List uint32ToByte(int value) =>
 
 // TODO move to util.dart
 void readBytes(RawSecureSocket reader) {
-  // Read packet size
-  int size = readSize(reader);
-  logger.i(size);
 
-  // Read Error Code
-  readErrorCode(reader);
+  StreamSubscription data =reader.listen((event) {
+    // Read packet size
+    // int size = readSize2(event);
+    print(event);
+  }
+  );
+  // data.onData((data) {
+  //  print(data);
+  // });
 
-  // Read bytes from reader
-  readNBytes(reader, size);
+
 }
 
 int readErrorCode(RawSecureSocket reader) {
   // Read 1 byte for the error code
-  Uint8List b = readNBytes(reader, 4);
+  Uint8List b = readNBytes(reader, 1);
 
   // if there is no error
   if (b  !=Uint8List(1)) {
@@ -232,10 +246,7 @@ int readErrorCode(RawSecureSocket reader) {
   }
 }
 
-Uint32List intToUint32(int value) {
-  var buffer = value;
 
-}
 
 // Byte to unsigned int32
 int byteToUint32(Uint8List value) {
@@ -244,18 +255,32 @@ int byteToUint32(Uint8List value) {
   return byteData.getUint32(0);
 }
 
+
+int readSize2(RawSecureSocket reader) {
+  reader.listen((event) {
+
+  });
+}
 // TODO move to util
+// There is an error in readSize. I think it caused because of type? I should use uint32 instead of int???
 int readSize(RawSecureSocket reader) {
   try {
     // Read first 4 bytes for the size
     Uint8List byte = readNBytes(reader, 4);
+    // print(byte);
+    if (byte == Uint8List(0)){
+      logger.i("Size: 0");
+      return 0;
+    }
     // convert byte to Uint32
-    // Uint32List res = byte.buffer.asUint32List();
     int size = byteToUint32(byte);
     logger.i("Size: " + size.toString());
     return size;
   }catch(e){
-    logger.d("Error in readSize(): $e");
+    return 0;
+    logger.e("Error in readSize(): ");
+  // } finally{
+  //   return 0;
   }
 }
 
@@ -272,34 +297,39 @@ int Uint32ToInt(Uint32List value) {
 
 /// readNBytes reads up to nth byte
 ///  TODO move to util and change [int] parameter to [Uint32List]
-/// return data(8-bit unsigned integers)
+/// return data[Byte]
 Uint8List readNBytes(RawSecureSocket reader, int n) {
   try {
+    // logger.wtf(reader);
+    if (reader.read(n) == null){
+      return Uint8List(0);
+    }
     Uint8List buffer = reader.read(n);
-    logger.i(buffer.length);
+    logger.wtf(buffer.length);
     return buffer;
   } catch(e) {
-    logger.d("Error in readNBytes() :$e");
+    logger.e("Error in readNBytes() :$e");
   }
 }
 
 
-// print(String.fromCharCode(data));
-// new String.fromCharCode(charCode)
-// if (packetData == null) {
-//   print("Error while reading bytes");
-//   return null;
+// void listen(RawSecureSocket reader) {
+//   reader.listen(
+//         (event.listen) {
+//       // final serverRespone = String.fromCharCode(event);
+//     },);
 // }
-// return packetData;
+
+
 
 void doGetAddCode(Client client) {
   // Send the command to the server
   try {
     writeString(client.conn, command(GetAddCode));
-    logger.i("writeString = get code is done");
+    logger.i("writeString command (DoGetcode()) is done");
     readBytes(client.conn);
   } catch (e) {
-    logger.d("Error in doGetAddCode: $e");
+    logger.e("Error in doGetAddCode: $e");
   }
 }
 
@@ -309,7 +339,7 @@ void writeString(RawSecureSocket writer, String msg) {
     Uint8List bytes = utf8.encode(msg);
     writeBytes(writer, bytes);
   } catch(e) {
-    logger.d("Error in writeString(): $e");
+    logger.e("Error in writeString(): $e");
   }
 
 }
@@ -318,6 +348,6 @@ Future<void> main() async {
   Logger.level = Level.debug;
   Client client = await newClient();
   await connect(client);
-  print(client.conn);
-  doGetAddCode(client);
+  // print(client.conn);
+  // doGetAddCode(client);
 }
