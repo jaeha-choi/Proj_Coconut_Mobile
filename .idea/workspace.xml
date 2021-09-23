@@ -5,27 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97d1b25b-a89d-4d06-b923-4b6d44c37190" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/Proj_Coconut_Mobile.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/codeStyles/Project.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/codeStyles/codeStyleConfig.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/libraries/Dart_Packages.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/libraries/Dart_SDK.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/mobile_app/ios/Podfile" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/mobile_app/ios/Podfile.lock" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/mobile_app/testdata/util/cat.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/mobile_app/testdata/util/checksum.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/mobile_app/testdata/util/pine_cone.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/mobile_app/testdata/util/test_8192.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile_app/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/mobile_app/.gitignore" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
-  <component name="ExecutionTargetManager" SELECTED_TARGET="device_and_snapshot_combo_box_target[/Users/robin/.android/avd/Nexus_6_API_30.avd]" />
+  <component name="ExecutionTargetManager" SELECTED_TARGET="device_and_snapshot_combo_box_target[]" />
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
