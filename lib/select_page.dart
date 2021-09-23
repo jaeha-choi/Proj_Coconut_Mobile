@@ -6,7 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'util.dart';
 
 class SelectPage extends StatefulWidget {
-  SelectPage({Key key, this.title}) : super(key: key);
+  SelectPage({Key? key, required this.title}) : super(key: key);
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -28,6 +28,8 @@ class _MySelectPageState extends State<SelectPage> {
   List<File> filePath;
   final files = new Map();
   final myController = TextEditingController();
+  RawSocket socket;
+
 
   // getFile gets any types of files (single or multiple) from devices (android and iPhone)
   void getFile() async {
@@ -71,9 +73,8 @@ class _MySelectPageState extends State<SelectPage> {
     // files.forEach((k,v) => print('${k}: ${v}'));
   }
 
-  RawSocket socket;
 
-  void connects_to_socket() async {
+  void connectsToSocket() async {
     try {
       socket = await RawSocket.connect('143.198.234.58', 1234);
     } on SocketException catch (e) {

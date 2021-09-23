@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 
 class FrontPage extends StatefulWidget {
-  FrontPage({Key key, this.title}) : super(key: key);
+  FrontPage({Key? key, required this.title}) : super(key: key);
   final String title;
 
   @override
@@ -41,7 +41,7 @@ class _FrontPageState extends State<FrontPage> {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => SelectPage()),
+                          MaterialPageRoute(builder: (context) => SelectPage(title: "Select Page",)),
                         );
                       },
                       child: Text(
