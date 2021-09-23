@@ -11,7 +11,3 @@ const String RequestPubKey ="RPUB";
 String command(name) {
   return name;
 }
-
-// void main() {
-//   print(command(Quit));
-// }

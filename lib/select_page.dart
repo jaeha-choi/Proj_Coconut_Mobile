@@ -6,7 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'util.dart';
 
 class SelectPage extends StatefulWidget {
-  SelectPage({Key key, this.title}) : super(key: key);
+  SelectPage({Key? key, required this.title}) : super(key: key);
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect

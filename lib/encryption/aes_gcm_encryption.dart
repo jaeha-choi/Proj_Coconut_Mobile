@@ -1,7 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:cryptography/cryptography.dart';
-import 'dart:math';
 import 'dart:typed_data';
 import 'package:pointycastle/src/platform_check/platform_check.dart';
 import "package:pointycastle/export.dart";
