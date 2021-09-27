@@ -6,6 +6,7 @@ import 'package:pointycastle/api.dart';
 import 'package:basic_utils/basic_utils.dart';
 import 'package:logger/logger.dart';
 
+const int rsaKeySize = 4096;
 const int bufferSize = 4096;
 
 var logger = Logger(
@@ -28,8 +29,10 @@ var logger = Logger(
 
 /// Convert 4 bytes to unsigned int32
 int bytesToUint32(Uint8List value, [int offsetInBytes = 0]) {
-  var buffer = value.buffer;
-  var byteData = new ByteData.view(buffer, offsetInBytes, 4);
+  // var buffer = value.buffer;
+  // var byteData = new ByteData.view(buffer, offsetInBytes, 4);
+  ByteData byteData =
+      ByteData.sublistView(value, offsetInBytes, offsetInBytes + 4);
   return byteData.getUint32(0);
 }
 
@@ -52,7 +55,7 @@ String encodePublicKeyToPemPKCS1(RSAPublicKey publicKey) {
 /// Returns true if PEM files are created, false otherwise.
 Future<bool> createPemFile() async {
   try {
-    final pair = CryptoUtils.generateRSAKeyPair(keySize: 4096);
+    final pair = CryptoUtils.generateRSAKeyPair(keySize: rsaKeySize);
 
     // Examine the generated key-pair
     final rsaPublic = pair.publicKey as RSAPublicKey;
@@ -74,18 +77,8 @@ Future<bool> createPemFile() async {
 Uint8List PemToSha256(String pubKey) {
   // Convert string to byte
   var byte = Uint8List.fromList(pubKey.codeUnits);
-
   return Digest("SHA-256").process(byte);
 }
-
-
-
-
-
-
-
-
-
 
 // WriteString writes message to writer
 // length of message cannot exceed BufferSize

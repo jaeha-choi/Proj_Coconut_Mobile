@@ -12,8 +12,9 @@ import 'commands.dart';
 
 final logger = Logger(
   printer: PrettyPrinter(
+      noBoxingByDefault: true,
       // number of method calls to be displayed
-      methodCount: 1,
+      methodCount: 0,
       // number of method calls if stacktrace is provided
       errorMethodCount: 3,
       // width of the output
@@ -29,24 +30,31 @@ final logger = Logger(
 class Client {
   String serverIP;
   int serverPort;
-  RawSecureSocket? conn;
+  late SecureSocket conn;
   RSAPrivateKey privKey;
   String pubKeyBlock;
   String addCode;
+  late BytesBuilder dataBuilder;
+  late StreamSubscription stream;
+  Future<bool> isDataReady;
 
   Client({
     required String serverIP,
     required int serverPort,
-    RawSecureSocket? conn,
+    // SecureSocket? conn,
     required RSAPrivateKey privKey,
     required String pubKey,
     required String addCode,
+    required Future<bool> isDataReady,
+    // StreamSubscription? stream,
   })  : this.serverIP = serverIP,
         this.serverPort = serverPort,
-        this.conn = conn,
+        // this.conn = conn,
         this.privKey = privKey,
         this.pubKeyBlock = pubKey,
-        this.addCode = addCode;
+        this.addCode = addCode,
+        this.isDataReady = isDataReady;
+// this.stream = stream;
 }
 
 /// Creates new [Client] and return it.
@@ -71,10 +79,14 @@ Future<Client?> newClient() async {
     return new Client(
       serverIP: "127.0.0.1",
       serverPort: 9129,
-      conn: null,
+      // conn: null,
       privKey: privateKey,
       pubKey: pubKey,
       addCode: "",
+      isDataReady: Future<bool>(() {
+        return false;
+      }),
+      // stream: null,
     );
   } catch (e) {
     logger.e('Error in newClient() $e');
@@ -87,16 +99,30 @@ Future<Client?> newClient() async {
 Future<bool> connect(Client client) async {
   try {
     logger.i('Connecting....');
-    ConnectionTask<RawSecureSocket> connection =
-        await RawSecureSocket.startConnect(
+    client.conn = await SecureSocket.connect(
       client.serverIP,
       client.serverPort,
       onBadCertificate: (certificate) => true,
     );
-    client.conn = await connection.socket;
+
+    logger.i(
+        'Connection from ${client.conn.remoteAddress.address}:${client.conn.remotePort}');
+
+    final bytesBuilder = BytesBuilder();
+    client.dataBuilder = BytesBuilder();
+
+    client.stream = client.conn.listen(
+      // handle data from the client
+      (Uint8List data) async {
+        client.isDataReady = onDataHelper(data, bytesBuilder, client);
+      },
+      //     onDone: () {
+      //   client.stream.cancel();
+      // }
+    );
 
     // Initializing client
-    doInit(client);
+    await doInit(client);
 
     return true;
   } catch (e) {
@@ -105,21 +131,60 @@ Future<bool> connect(Client client) async {
   return false;
 }
 
+Future<bool> onDataHelper(
+    Uint8List data, BytesBuilder bytesBuilder, Client client) async {
+  if (bytesBuilder.length + data.length >= 5) {
+    int offset = 5 - bytesBuilder.length;
+
+    bytesBuilder.add(data.take(offset).toList());
+
+    Uint8List byte = bytesBuilder.toBytes();
+    int size = _readSize(byte); // 0
+    logger.d("BytesBuilder Content: " +
+        bytesBuilder.toBytes().toString() +
+        "Received data: $data\nOffset: $offset\nOffset byte : " +
+        data.take(offset).toString() +
+        "\nSize $size");
+    //TODO replace errCode with actual errCode
+    int errCode = 0;
+    if (data.length >= size) {
+      bytesBuilder.clear();
+      // print(offset);
+      // print(size);
+      var outputData;
+      outputData = data.getRange(offset, size + offset).toList();
+      logger.d("data: " + outputData.toString());
+      client.dataBuilder.add(outputData);
+      client.stream.pause();
+      return true;
+      //TODO return ErrorCode as well
+      //TODO if there are remaining data, make sure to return the remaining item
+      // onDataHelper(data.getRange(size, data.length).toList(), bytesBuilder);
+    } else {
+      bytesBuilder.add(data.getRange(offset, data.length).toList());
+    }
+  } else {
+    bytesBuilder.add(data);
+  }
+  logger.d("-------------");
+  return false;
+}
+
 /// Send initialization code to the server
-void doInit(Client client) {
+Future<void> doInit(Client client) async {
   Uint8List pubKeyHash = PemToSha256(client.pubKeyBlock);
   // Send pubKeyHash to the server
-  writeBytes(client.conn!, pubKeyHash);
-
-  return getResult(client.conn!);
+  writeBytes(client.conn, pubKeyHash);
+  getResult(client);
+  return;
 }
 
 Future<bool> doGetAddCode(Client client) async {
   // Send the command to the server
   try {
-    writeString(client.conn!, command(GetAddCode));
+    writeString(client.conn, command(GetAddCode));
     logger.i("writeString command (DoGetcode()) is done");
-    readBytes(client.conn!);
+    await readBytes(client);
     return true;
   } catch (e) {
     logger.e("Error in doGetAddCode: $e");
@@ -128,24 +193,55 @@ Future<bool> doGetAddCode(Client client) async {
 }
 
 /// Returns error code from the server
-void getResult(RawSecureSocket conn) {
+Future<void> getResult(Client client) async {
   // TODO: Get uint8 error code from the server
-  readBytes(conn);
+  readBytes(client);
   return;
 }
 
-Future<Uint8List?> readBytes(RawSecureSocket conn) async {
-  try{
+// return the size of data
+int _readSize(Uint8List data) {
+  try {
+    return bytesToUint32(data);
+  } catch (e) {
+    logger.e  ("Error in findSize(): $e");
+  }
+  return -1;
+}
+
+Future waitWhile(bool test(), [Duration pollInterval = Duration.zero]) {
+  var completer = new Completer();
+  check() {
+    if (test()) {
+      completer.complete();
+    } else {
+      new Timer(pollInterval, check);
+    }
+  }
+
+  check();
+  return completer.future;
+}
+
+Future<Uint8List?> readBytes(Client client) async {
+  try {
     // TODO: Finish implementing readBytes
-    Uint8List result = ;
-    return result;
-  }catch (e) {
+    await waitWhile(() => client.stream.isPaused);
+
+    // print(await client.isDataReady);
+
+    var data = client.dataBuilder.takeBytes();
+    print("Data: $data");
+    client.stream.resume();
+
+    return data;
+  } catch (e) {
     logger.e("Error in readBytes: $e");
   }
   return null;
 }
 
-bool writeString(RawSecureSocket writer, String msg) {
+bool writeString(SecureSocket writer, String msg) {
   if (msg.isEmpty) {
     logger.e("msg cannot be empty");
     return false;
@@ -166,7 +262,7 @@ bool writeString(RawSecureSocket writer, String msg) {
 /// WriteString writes message to writer
 /// length of message cannot exceed BufferSize
 /// returns [total bytes sent]
-Uint8List writeBytes(RawSecureSocket writer, Uint8List bytes) {
+Uint8List writeBytes(SecureSocket writer, Uint8List bytes) {
   try {
     // Convert string to byte
     // Get size(uint32) of total bytes to send
@@ -180,7 +276,7 @@ Uint8List writeBytes(RawSecureSocket writer, Uint8List bytes) {
     // Write error code
     _writeErrorCode(writer);
     // Write file to writer
-    writer.write(bytes);
+    writer.add(bytes);
 
     return bytes;
   } catch (error) {
@@ -190,20 +286,20 @@ Uint8List writeBytes(RawSecureSocket writer, Uint8List bytes) {
 }
 
 /// Given a socket [Socket] and size of the file [Uint8List]
-void _writeSize(RawSecureSocket writer, Uint8List size) {
+void _writeSize(SecureSocket writer, Uint8List size) {
   try {
     // Write size of the string to writer
-    writer.write(size);
+    writer.add(size);
   } catch (e) {
     logger.e("Error in writeSize() :$e");
   }
 }
 
-bool _writeErrorCode(RawSecureSocket writer) {
+bool _writeErrorCode(SecureSocket writer) {
   try {
     // Write 1 byte of error code
     Uint8List code = Uint8List(1);
-    writer.write(code);
+    writer.add(code);
     return true;
   } catch (e) {
     logger.e('Error in writeErrorCode() :$e');
@@ -212,13 +308,12 @@ bool _writeErrorCode(RawSecureSocket writer) {
 }
 
 Future<void> main() async {
-  Logger.level = Level.debug;
+  Logger.level = Level.info;
   Client? client = await newClient();
   if (client == null) {
     // TODO: Error handling
     return;
   }
   await connect(client);
-
-  // doGetAddCode(client);
+  doGetAddCode(client);
 }
