@@ -25,18 +25,18 @@ class SelectPage extends StatefulWidget {
 
 class _MySelectPageState extends State<SelectPage> {
   // String tempPath;
-  List<File> filePath;
+  late List<File> filePath;
   final files = new Map();
   final myController = TextEditingController();
-  RawSocket socket;
+  late RawSocket socket;
 
 
   // getFile gets any types of files (single or multiple) from devices (android and iPhone)
   void getFile() async {
-    FilePickerResult result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
+    FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
 
     if (result != null) {
-      filePath = result.paths.map((path) => File(path)).toList();
+      filePath = result.paths.map((path) => File(path!)).toList();
       String localName;
       String key;
       for (int i = 0; i < filePath.length; i++) {
@@ -53,9 +53,9 @@ class _MySelectPageState extends State<SelectPage> {
   }
 
   Future getImage() async {
-    FilePickerResult result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.image);
+    FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.image);
     if (result != null) {
-      filePath = result.paths.map((path) => File(path)).toList();
+      filePath = result.paths.map((path) => File(path!)).toList();
       String localName;
       String key;
 
@@ -99,7 +99,7 @@ class _MySelectPageState extends State<SelectPage> {
 
   // final Map<String, File> files = {};
 
-  Future writeFileBin(RawSocket conn, Map files) {
+  Future writeFileBin(RawSocket conn, Map files) async {
     // files.forEach((k,v) => writeString(conn, k) );
     // files.forEach((k,v) =>  writeBinary(conn, v) );
 

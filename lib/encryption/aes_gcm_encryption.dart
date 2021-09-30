@@ -16,7 +16,7 @@ main() {
 void encryptSetup() {
   // Message we want to encrypt
   final message = utf8.encode('Hello encryption!');
-  
+
 
   // Generate symmetric encryption key
 
@@ -53,7 +53,6 @@ AsymmetricKeyPair<RSAPublicKey, RSAPrivateKey> generateRSAkeyPair(
 
 // exampleSecureRandom creates Fortuna random number generator
 SecureRandom exampleSecureRandom() {
-
   final secureRandom = SecureRandom('Fortuna')
     ..seed(KeyParameter(
         Platform.instance.platformEntropySource().getBytes(32)));
@@ -70,9 +69,9 @@ SecureRandom exampleSecureRandom() {
 // Receiver's pub key is required for encrypting symmetric encryption key.
 // Sender's private key is required for singing the encrypt key.
 Future<void> encrypt(RawSocket writer, RSAPublicKey,  RSAPrivateKey) async {
-  Uint8List list ;
+  Uint8List? list ;
   // Encrypt and sign symmetric encryption key
-  rsaEncrypt(RSAPublicKey, list);
+  rsaEncrypt(RSAPublicKey, list!);
   // final secretKey = SecretKey(RSAPublicKey);
 
 

@@ -223,7 +223,7 @@ Uint8List writeBytes(SecureSocket writer, Uint8List bytes) {
     // Write size[uint8] of the file to writer
     _writeSize(writer, size);
     // Write error code
-    _writeErrorCode(writer);
+    // _writeErrorCode(writer);
     // Write file to writer
     writer.add(bytes);
 
@@ -238,7 +238,10 @@ Uint8List writeBytes(SecureSocket writer, Uint8List bytes) {
 void _writeSize(SecureSocket writer, Uint8List size) {
   try {
     // Write size of the string to writer
-    writer.add(size);
+    // Write 1 byte of error code
+    Uint8List code = Uint8List(1);
+
+    writer.add(size +code);
   } catch (e) {
     logger.e("Error in writeSize() :$e");
   }
@@ -247,6 +250,7 @@ void _writeSize(SecureSocket writer, Uint8List size) {
 bool _writeErrorCode(SecureSocket writer) {
   try {
     // Write 1 byte of error code
+    //TODO create errrorCode class
     Uint8List code = Uint8List(1);
     writer.add(code);
     return true;
