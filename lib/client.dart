@@ -27,6 +27,20 @@ final logger = Logger(
       printTime: false),
 );
 
+class Message {
+  int size;
+  int errorCode;
+  Uint8List data;
+
+  Message({
+    required int size,
+    required int errorCode,
+    required Uint8List data,
+  })  : size = size,
+        errorCode = errorCode,
+        data = data;
+}
+
 class Client {
   String serverIP;
   int serverPort;
@@ -34,9 +48,7 @@ class Client {
   RSAPrivateKey privKey;
   String pubKeyBlock;
   String addCode;
-  late BytesBuilder dataBuilder;
-  late StreamSubscription stream;
-  Future<bool> isDataReady;
+  late StreamIterator connDataIterator;
 
   Client({
     required String serverIP,
@@ -45,15 +57,13 @@ class Client {
     required RSAPrivateKey privKey,
     required String pubKey,
     required String addCode,
-    required Future<bool> isDataReady,
     // StreamSubscription? stream,
   })  : this.serverIP = serverIP,
         this.serverPort = serverPort,
         // this.conn = conn,
         this.privKey = privKey,
         this.pubKeyBlock = pubKey,
-        this.addCode = addCode,
-        this.isDataReady = isDataReady;
+        this.addCode = addCode;
 // this.stream = stream;
 }
 
@@ -83,9 +93,6 @@ Future<Client?> newClient() async {
       privKey: privateKey,
       pubKey: pubKey,
       addCode: "",
-      isDataReady: Future<bool>(() {
-        return false;
-      }),
       // stream: null,
     );
   } catch (e) {
@@ -104,22 +111,10 @@ Future<bool> connect(Client client) async {
       client.serverPort,
       onBadCertificate: (certificate) => true,
     );
+    client.connDataIterator = StreamIterator(client.conn);
 
     logger.i(
-        'Connection from ${client.conn.remoteAddress.address}:${client.conn.remotePort}');
-
-    final bytesBuilder = BytesBuilder();
-    client.dataBuilder = BytesBuilder();
-
-    client.stream = client.conn.listen(
-      // handle data from the client
-      (Uint8List data) async {
-        client.isDataReady = onDataHelper(data, bytesBuilder, client);
-      },
-      //     onDone: () {
-      //   client.stream.cancel();
-      // }
-    );
+        'Connected to ${client.conn.remoteAddress.address}:${client.conn.remotePort}');
 
     // Initializing client
     await doInit(client);
@@ -131,51 +126,12 @@ Future<bool> connect(Client client) async {
   return false;
 }
 
-Future<bool> onDataHelper(
-    Uint8List data, BytesBuilder bytesBuilder, Client client) async {
-  if (bytesBuilder.length + data.length >= 5) {
-    int offset = 5 - bytesBuilder.length;
-
-    bytesBuilder.add(data.take(offset).toList());
-
-    Uint8List byte = bytesBuilder.toBytes();
-    int size = _readSize(byte); // 0
-    logger.d("BytesBuilder Content: " +
-        bytesBuilder.toBytes().toString() +
-        "Received data: $data\nOffset: $offset\nOffset byte : " +
-        data.take(offset).toString() +
-        "\nSize $size");
-    //TODO replace errCode with actual errCode
-    int errCode = 0;
-    if (data.length >= size) {
-      bytesBuilder.clear();
-      // print(offset);
-      // print(size);
-      var outputData;
-      outputData = data.getRange(offset, size + offset).toList();
-      logger.d("data: " + outputData.toString());
-      client.dataBuilder.add(outputData);
-      client.stream.pause();
-      return true;
-      //TODO return ErrorCode as well
-      //TODO if there are remaining data, make sure to return the remaining item
-      // onDataHelper(data.getRange(size, data.length).toList(), bytesBuilder);
-    } else {
-      bytesBuilder.add(data.getRange(offset, data.length).toList());
-    }
-  } else {
-    bytesBuilder.add(data);
-  }
-  logger.d("-------------");
-  return false;
-}
-
 /// Send initialization code to the server
 Future<void> doInit(Client client) async {
   Uint8List pubKeyHash = PemToSha256(client.pubKeyBlock);
   // Send pubKeyHash to the server
   writeBytes(client.conn, pubKeyHash);
-  getResult(client);
+  await getResult(client);
   return;
 }
 
@@ -184,7 +140,9 @@ Future<bool> doGetAddCode(Client client) async {
   try {
     writeString(client.conn, command(GetAddCode));
     logger.i("writeString command (DoGetcode()) is done");
-    await readBytes(client);
+    Message msg = await readBytes(client);
+    logger.i("Add Code: ${utf8.decode(msg.data)}");
+    await getResult(client);
     return true;
   } catch (e) {
     logger.e("Error in doGetAddCode: $e");
@@ -193,52 +151,43 @@ Future<bool> doGetAddCode(Client client) async {
 }
 
 /// Returns error code from the server
-Future<void> getResult(Client client) async {
-  // TODO: Get uint8 error code from the server
-  readBytes(client);
-  return;
+Future<int> getResult(Client client) async {
+  // TODO: Convert error code (int) to an Error object
+  Message msg = await readBytes(client);
+  return msg.errorCode;
 }
 
-// return the size of data
-int _readSize(Uint8List data) {
+Future<Message> readBytes(Client client) async {
+  int size = -1;
+  int errorCode = 255; // TODO: update to actual "unknown error" error code
+  Uint8List data = Uint8List(0);
+
   try {
-    return bytesToUint32(data);
-  } catch (e) {
-    logger.e  ("Error in findSize(): $e");
-  }
-  return -1;
-}
-
-Future waitWhile(bool test(), [Duration pollInterval = Duration.zero]) {
-  var completer = new Completer();
-  check() {
-    if (test()) {
-      completer.complete();
-    } else {
-      new Timer(pollInterval, check);
+    // Wait for the size + error code
+    bool isDataAvailable = await client.connDataIterator.moveNext();
+    if (!isDataAvailable) {
+      throw new Exception("no data available from the server");
     }
-  }
+    Uint8List sizeErrorCode = client.connDataIterator.current;
+    size = bytesToUint32(sizeErrorCode);
+    errorCode = sizeErrorCode[4];
 
-  check();
-  return completer.future;
-}
-
-Future<Uint8List?> readBytes(Client client) async {
-  try {
-    // TODO: Finish implementing readBytes
-    await waitWhile(() => client.stream.isPaused);
-
-    // print(await client.isDataReady);
-
-    var data = client.dataBuilder.takeBytes();
-    print("Data: $data");
-    client.stream.resume();
-
-    return data;
+    // If the packets can be trimmed before received, check if the size of
+    // received data matches the size of the original msg
+    if (size != 0) {
+      isDataAvailable = await client.connDataIterator.moveNext();
+      if (!isDataAvailable) {
+        throw new Exception("no data available from the server");
+      }
+      data = client.connDataIterator.current;
+    }
   } catch (e) {
     logger.e("Error in readBytes: $e");
   }
-  return null;
+
+  logger.i("readBytes\tSize:$size\tErrorCode:$errorCode\tData:$data");
+
+  return Message(size: size, errorCode: errorCode, data: data);
 }
 
 bool writeString(SecureSocket writer, String msg) {
@@ -308,7 +257,7 @@ bool _writeErrorCode(SecureSocket writer) {
 }
 
 Future<void> main() async {
-  Logger.level = Level.info;
+  Logger.level = Level.debug;
   Client? client = await newClient();
   if (client == null) {
     // TODO: Error handling
