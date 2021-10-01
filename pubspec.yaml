@@ -34,6 +34,8 @@ dependencies:
 #  cryptography: ^2.0.2 # for aes_gcm_encryption.dart
   basic_utils: ^3.6.0
   logger: ^1.1.0
+#  collection: ^1.15.0
+#  encrypt: ^5.0.1 # for AES
 dev_dependencies:
   flutter_test:
     sdk: flutter

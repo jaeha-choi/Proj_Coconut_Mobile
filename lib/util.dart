@@ -36,6 +36,10 @@ int bytesToUint32(Uint8List value, [int offsetInBytes = 0]) {
   return byteData.getUint32(0);
 }
 
+/// Convert unsigned in 16 to bytes
+Uint8List uint16ToBytes(int value) =>
+    Uint8List(2)..buffer.asByteData().setUint16(0, value, Endian.big);
+
 /// Convert unsigned int32 to bytes
 Uint8List uint32ToBytes(int value) =>
     Uint8List(4)..buffer.asByteData().setUint32(0, value, Endian.big);
