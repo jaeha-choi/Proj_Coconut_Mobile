@@ -21,7 +21,7 @@ List? rsaEncrypt(Uint8List data, RSAPublicKey publicKey, RSAPrivateKey privateKe
 
 
   }catch(e){
-    logger.d("Error in rsaEncrypt()")
+    logger.d("Error in rsaEncrypt()");
     return null;
   }
 
