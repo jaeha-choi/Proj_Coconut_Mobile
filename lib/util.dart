@@ -1,13 +1,26 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:pointycastle/api.dart';
-import 'package:basic_utils/basic_utils.dart';
 import 'package:logger/logger.dart';
 
 const int rsaKeySize = 4096;
 const int bufferSize = 4096;
+
+class Message {
+  int size;
+  int errorCode;
+  Uint8List data;
+
+  Message({
+    required int size,
+    required int errorCode,
+    required Uint8List data,
+  })  : size = size,
+        errorCode = errorCode,
+        data = data;
+}
 
 var logger = Logger(
   printer: PrettyPrinter(
@@ -22,7 +35,7 @@ var logger = Logger(
       printEmojis: true,
       // Print an emoji for each log message
       printTime: false // Should each log print contain a timestamp
-      ),
+  ),
 );
 
 /// ----Conversions----
@@ -32,7 +45,7 @@ int bytesToUint32(Uint8List value, [int offsetInBytes = 0]) {
   // var buffer = value.buffer;
   // var byteData = new ByteData.view(buffer, offsetInBytes, 4);
   ByteData byteData =
-      ByteData.sublistView(value, offsetInBytes, offsetInBytes + 4);
+  ByteData.sublistView(value, offsetInBytes, offsetInBytes + 4);
   return byteData.getUint32(0);
 }
 
@@ -44,63 +57,6 @@ Uint8List uint16ToBytes(int value) =>
 Uint8List uint32ToBytes(int value) =>
     Uint8List(4)..buffer.asByteData().setUint32(0, value, Endian.big);
 
-/// ----RSA Related----
-
-/// Convert [publicKey] to PEM format string
-String encodePublicKeyToPemPKCS1(RSAPublicKey publicKey) {
-  var topLevel = new ASN1Sequence();
-  topLevel.add(ASN1Integer(publicKey.modulus));
-  topLevel.add(ASN1Integer(publicKey.exponent));
-  var dataBase64 = base64.encode(topLevel.encodedBytes!);
-  return "-----BEGIN RSA PUBLIC KEY-----\r\n$dataBase64\r\n-----END RSA PUBLIC KEY-----";
-}
-
-/// Creates [RSAPublicKey] & [RSAPrivateKey] and save them locally.
-/// Returns true if PEM files are created, false otherwise.
-Future<bool> createPemFile() async {
-  try {
-    final pair = CryptoUtils.generateRSAKeyPair(keySize: rsaKeySize);
-
-    // Examine the generated key-pair
-    final rsaPublic = pair.publicKey as RSAPublicKey;
-    final rsaPrivate = pair.privateKey as RSAPrivateKey;
-
-    File('key.priv').writeAsStringSync(
-        CryptoUtils.encodeRSAPrivateKeyToPemPkcs1(rsaPrivate));
-    File('key.pub')
-        .writeAsStringSync(CryptoUtils.encodeRSAPublicKeyToPemPkcs1(rsaPublic));
-
-    return true;
-  } catch (e) {
-    logger.e('Error in createPemFile() $e');
-  }
-  return false;
-}
-
-/// Convert PEM formatted string [pubKey] to SHA256 bytes
-Uint8List PemToSha256(String pubKey) {
-  // Convert string to byte
-  var byte = Uint8List.fromList(pubKey.codeUnits);
-  return Digest("SHA-256").process(byte);
-}
-
-// WriteString writes message to writer
-// length of message cannot exceed BufferSize
-// returns <total bytes sent, error>
-List writeString(RawSocket writer, String msg) {
-  try {
-    // Convert string to byte
-    // * actual information converted into byte
-    var bytes = utf8.encode(msg);
-    // Get size(uint32) of total bytes to send
-    var size = uint32ToBytes(bytes.length);
-    writer.write(size + bytes);
-    return [size, true];
-  } catch (error) {
-    return [0, false];
-  }
-}
-
 // // getFilePath calls getApplication Documents Directory. This comes from the path_provider package.
 // // This will get whatever the common documents directory is for the platform that we are using.
 // // returns path to the documents directory as a String
@@ -111,6 +67,39 @@ List writeString(RawSocket writer, String msg) {
 //
 //   return filePath;
 // }
+
+Future<Message> readBytes(StreamIterator streamIterator) async {
+  int size = -1;
+  int errorCode = 255; // TODO: update to actual "unknown error" error code
+  Uint8List data = Uint8List(0);
+
+  try {
+    // Wait for the size + error code
+    bool isDataAvailable = await streamIterator.moveNext();
+    if (!isDataAvailable) {
+      throw new Exception("no data available from the server");
+    }
+    Uint8List sizeErrorCode = streamIterator.current;
+    size = bytesToUint32(sizeErrorCode);
+    errorCode = sizeErrorCode[4];
+
+    // If the packets can be trimmed before received, check if the size of
+    // received data matches the size of the original msg
+    if (size != 0) {
+      isDataAvailable = await streamIterator.moveNext();
+      if (!isDataAvailable) {
+        throw new Exception("no data available from the server");
+      }
+      data = streamIterator.current;
+    }
+  } catch (e) {
+    logger.e("Error in readBytes: $e");
+  }
+
+  logger.i("readBytes\tSize:$size\tErrorCode:$errorCode\tData:$data");
+
+  return Message(size: size, errorCode: errorCode, data: data);
+}
 
 // writeBinary opens file and write byte data to writer
 //
@@ -129,6 +118,49 @@ Future<List> writeBinary(RawSocket conn, File file) async {
     return [0, false];
   }
   return [sizeInByte, true];
+}
+
+bool writeString(SecureSocket writer, String msg) {
+  if (msg.isEmpty) {
+    logger.e("msg cannot be empty");
+    return false;
+  }
+  try {
+    Uint8List? bytes = utf8.encode(msg) as Uint8List?;
+    if (bytes == null) {
+      throw Exception("bytes cannot be null");
+    }
+    writeBytes(writer, bytes);
+    return true;
+  } catch (e) {
+    logger.e("Error in writeString(): $e");
+  }
+  return false;
+}
+
+/// WriteString writes message to writer
+/// length of message cannot exceed BufferSize
+/// returns length of total bytes sent. Return -1 on error.
+int writeBytes(SecureSocket writer, Uint8List bytes) {
+  try {
+    // Get size(uint32) of total bytes to send
+    var size = uint32ToBytes(bytes.length);
+
+    // Write any error code [uint8] to writer
+    // TODO: Add actual error code, instead of just 0
+    Uint8List code = Uint8List(1);
+    // TODO: Double check + operator works as intended
+    writer.add(size + code);
+
+    // Write bytes to writer
+    writer.add(bytes);
+    // writer.flush();
+
+    return 5 + bytes.length;
+  } catch (error) {
+    logger.e('Error in writeString() :$error');
+    return -1;
+  }
 }
 
 @deprecated

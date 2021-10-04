@@ -6,6 +6,7 @@ import 'dart:typed_data';
 
 import 'package:basic_utils/basic_utils.dart';
 import 'package:logger/logger.dart';
+import 'package:mobile_app/encryption/rsa.dart';
 import 'package:mobile_app/util.dart';
 
 import 'commands.dart';
@@ -26,20 +27,6 @@ final logger = Logger(
       // Should each log print contain a timestamp
       printTime: false),
 );
-
-class Message {
-  int size;
-  int errorCode;
-  Uint8List data;
-
-  Message({
-    required int size,
-    required int errorCode,
-    required Uint8List data,
-  })  : size = size,
-        errorCode = errorCode,
-        data = data;
-}
 
 class Client {
   String serverIP;
@@ -128,7 +115,7 @@ Future<bool> connect(Client client) async {
 
 /// Send initialization code to the server
 Future<void> doInit(Client client) async {
-  Uint8List pubKeyHash = PemToSha256(client.pubKeyBlock);
+  Uint8List pubKeyHash = pemToSha256(client.pubKeyBlock);
   // Send pubKeyHash to the server
   writeBytes(client.conn, pubKeyHash);
   await getResult(client);
@@ -140,7 +127,7 @@ Future<bool> doGetAddCode(Client client) async {
   try {
     writeString(client.conn, command(GetAddCode));
     logger.i("writeString command (DoGetcode()) is done");
-    Message msg = await readBytes(client);
+    Message msg = await readBytes(client.connDataIterator);
     logger.i("Add Code: ${utf8.decode(msg.data)}");
     await getResult(client);
     return true;
@@ -153,111 +140,8 @@ Future<bool> doGetAddCode(Client client) async {
 /// Returns error code from the server
 Future<int> getResult(Client client) async {
   // TODO: Convert error code (int) to an Error object
-  Message msg = await readBytes(client);
+  Message msg = await readBytes(client.connDataIterator);
   return msg.errorCode;
-}
-
-Future<Message> readBytes(Client client) async {
-  int size = -1;
-  int errorCode = 255; // TODO: update to actual "unknown error" error code
-  Uint8List data = Uint8List(0);
-
-  try {
-    // Wait for the size + error code
-    bool isDataAvailable = await client.connDataIterator.moveNext();
-    if (!isDataAvailable) {
-      throw new Exception("no data available from the server");
-    }
-    Uint8List sizeErrorCode = client.connDataIterator.current;
-    size = bytesToUint32(sizeErrorCode);
-    errorCode = sizeErrorCode[4];
-
-    // If the packets can be trimmed before received, check if the size of
-    // received data matches the size of the original msg
-    if (size != 0) {
-      isDataAvailable = await client.connDataIterator.moveNext();
-      if (!isDataAvailable) {
-        throw new Exception("no data available from the server");
-      }
-      data = client.connDataIterator.current;
-    }
-  } catch (e) {
-    logger.e("Error in readBytes: $e");
-  }
-
-  logger.i("readBytes\tSize:$size\tErrorCode:$errorCode\tData:$data");
-
-  return Message(size: size, errorCode: errorCode, data: data);
-}
-
-bool writeString(SecureSocket writer, String msg) {
-  if (msg.isEmpty) {
-    logger.e("msg cannot be empty");
-    return false;
-  }
-  try {
-    Uint8List? bytes = utf8.encode(msg) as Uint8List?;
-    if (bytes == null) {
-      throw Exception("bytes cannot be null");
-    }
-    writeBytes(writer, bytes);
-    return true;
-  } catch (e) {
-    logger.e("Error in writeString(): $e");
-  }
-  return false;
-}
-
-/// WriteString writes message to writer
-/// length of message cannot exceed BufferSize
-/// returns [total bytes sent]
-Uint8List writeBytes(SecureSocket writer, Uint8List bytes) {
-  try {
-    // Convert string to byte
-    // Get size(uint32) of total bytes to send
-    var size = uint32ToBytes(bytes.length);
-    // logger.d(bytes.length);
-    // logger.d(size);
-    // logger.d(utf8.encode(size.toString()));
-
-    // Write size[uint8] of the file to writer
-    _writeSize(writer, size);
-    // Write error code
-    // _writeErrorCode(writer);
-    // Write file to writer
-    writer.add(bytes);
-
-    return bytes;
-  } catch (error) {
-    logger.e('Error in writeString() :$error');
-    return Uint8List(1);
-  }
-}
-
-/// Given a socket [Socket] and size of the file [Uint8List]
-void _writeSize(SecureSocket writer, Uint8List size) {
-  try {
-    // Write size of the string to writer
-    // Write 1 byte of error code
-    Uint8List code = Uint8List(1);
-
-    writer.add(size +code);
-  } catch (e) {
-    logger.e("Error in writeSize() :$e");
-  }
-}
-
-bool _writeErrorCode(SecureSocket writer) {
-  try {
-    // Write 1 byte of error code
-    //TODO create errrorCode class
-    Uint8List code = Uint8List(1);
-    writer.add(code);
-    return true;
-  } catch (e) {
-    logger.e('Error in writeErrorCode() :$e');
-  }
-  return false;
 }
 
 Future<void> main() async {

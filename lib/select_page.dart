@@ -1,6 +1,7 @@
 import 'dart:io';
-import 'package:flutter/material.dart';
+
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
 
 // import 'package:path_provider/path_provider.dart';
 import 'util.dart';
@@ -30,10 +31,10 @@ class _MySelectPageState extends State<SelectPage> {
   final myController = TextEditingController();
   late RawSocket socket;
 
-
   // getFile gets any types of files (single or multiple) from devices (android and iPhone)
   void getFile() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
+    FilePickerResult? result = await FilePicker.platform
+        .pickFiles(allowMultiple: true, type: FileType.any);
 
     if (result != null) {
       filePath = result.paths.map((path) => File(path!)).toList();
@@ -41,7 +42,8 @@ class _MySelectPageState extends State<SelectPage> {
       String key;
       for (int i = 0; i < filePath.length; i++) {
         localName = filePath[i].path;
-        key = localName.substring(localName.lastIndexOf("/") + 1, localName.length);
+        key = localName.substring(
+            localName.lastIndexOf("/") + 1, localName.length);
 
         // no collision from key
         files.putIfAbsent(key, () => filePath[i]);
@@ -53,7 +55,8 @@ class _MySelectPageState extends State<SelectPage> {
   }
 
   Future getImage() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.image);
+    FilePickerResult? result = await FilePicker.platform
+        .pickFiles(allowMultiple: true, type: FileType.image);
     if (result != null) {
       filePath = result.paths.map((path) => File(path!)).toList();
       String localName;
@@ -61,7 +64,8 @@ class _MySelectPageState extends State<SelectPage> {
 
       for (int i = 0; i < filePath.length; i++) {
         localName = filePath[i].path;
-        key = localName.substring(localName.lastIndexOf("/") + 1, localName.length);
+        key = localName.substring(
+            localName.lastIndexOf("/") + 1, localName.length);
 
         // no collision from key
         files.putIfAbsent(key, () => filePath[i]);
@@ -72,7 +76,6 @@ class _MySelectPageState extends State<SelectPage> {
     }
     // files.forEach((k,v) => print('${k}: ${v}'));
   }
-
 
   void connectsToSocket() async {
     try {
@@ -104,7 +107,7 @@ class _MySelectPageState extends State<SelectPage> {
     // files.forEach((k,v) =>  writeBinary(conn, v) );
 
     for (var k in files.keys) {
-      writeString(conn, k);
+      // writeString(conn, k);
       writeBinary(conn, files[k]);
     }
   }
@@ -224,14 +227,16 @@ class _MySelectPageState extends State<SelectPage> {
                     onPressed: getFile,
                     style: ElevatedButton.styleFrom(
                         primary: Colors.white12,
-                        textStyle: TextStyle(fontSize: 25, fontWeight: FontWeight.bold)),
+                        textStyle: TextStyle(
+                            fontSize: 25, fontWeight: FontWeight.bold)),
                   ),
                   ElevatedButton(
                     child: Text("Select Images"),
                     onPressed: getImage,
                     style: ElevatedButton.styleFrom(
                         primary: Colors.white12,
-                        textStyle: TextStyle(fontSize: 25, fontWeight: FontWeight.bold)),
+                        textStyle: TextStyle(
+                            fontSize: 25, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
@@ -240,7 +245,9 @@ class _MySelectPageState extends State<SelectPage> {
               child: Text("Send File"),
               onPressed: sendFile,
               style: ElevatedButton.styleFrom(
-                  primary: Colors.purple, textStyle: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
+                  primary: Colors.purple,
+                  textStyle:
+                      TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
             ),
             Spacer(),
           ],
