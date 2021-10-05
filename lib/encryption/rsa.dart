@@ -88,16 +88,11 @@ bool rsaVerify(RSAPublicKey publicKey, Uint8List signedData, Uint8List signature
 
 /// Decrypt the given [cipherMessage] using the given RSA [privateKey].
 Uint8List rsaDecrypt(Uint8List cipherByte, RSAPrivateKey privateKey){
-  return rsaDecryptHelper(cipherByte, privateKey);
-}
-
-Uint8List rsaDecryptHelper(Uint8List cipherByte, RSAPrivateKey privateKey) {
   var cipher = RSAEngine()
     ..init(false, PrivateKeyParameter<RSAPrivateKey>(privateKey));
-  var decrypted = cipher.process(Uint8List.fromList(cipherByte));
-
-  return decrypted;
+  return cipher.process(Uint8List.fromList(cipherByte));;
 }
+
 
 Future<void> main() async {
   String str = "Hello Guri";
