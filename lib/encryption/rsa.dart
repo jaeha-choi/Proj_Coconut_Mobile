@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:basic_utils/basic_utils.dart';
 import 'package:logger/logger.dart';
+import 'package:mobile_app/client.dart';
 import "package:pointycastle/export.dart";
 
 import '../util.dart';
@@ -27,7 +28,7 @@ final logger = Logger(
 
 /// Encrypt the given [message] using the given RSA [publicKey].
 /// Sign with the [privateKey]
-/// We copied this from CryptoUtil
+/// We copied this function from CryptoUtil
 /// https://github.com/Ephenodrom/Dart-Basic-Utils#cryptoutils
 List encryptSignMsg(
     Uint8List data, RSAPublicKey publicKey, RSAPrivateKey privateKey) {
@@ -76,4 +77,41 @@ Uint8List pemToSha256(String pubKey) {
   // Convert string to byte
   var byte = Uint8List.fromList(pubKey.codeUnits);
   return Digest("SHA-256").process(byte);
+}
+
+/// Verifies the RSA signature
+/// Returns true if it is a valid signature
+bool rsaVerify(RSAPublicKey publicKey, Uint8List signedData, Uint8List signature,{String algorithm = 'SHA-256/RSA'}){
+  return CryptoUtils.rsaVerify(publicKey, signedData, signature);
+}
+
+
+/// Decrypt the given [cipherMessage] using the given RSA [privateKey].
+Uint8List rsaDecrypt(Uint8List cipherByte, RSAPrivateKey privateKey){
+  return rsaDecryptHelper(cipherByte, privateKey);
+}
+
+Uint8List rsaDecryptHelper(Uint8List cipherByte, RSAPrivateKey privateKey) {
+  var cipher = RSAEngine()
+    ..init(false, PrivateKeyParameter<RSAPrivateKey>(privateKey));
+  var decrypted = cipher.process(Uint8List.fromList(cipherByte));
+
+  return decrypted;
+}
+
+Future<void> main() async {
+  String str = "Hello Guri";
+  List<int> byte = utf8.encode(str);
+  Uint8List plain = Uint8List.fromList(byte);
+  print("Plain message in txt: $str");
+  print("Plain message in byte: $plain");
+  Client? clinet = await newClient();
+
+  RSAPublicKey pubkey =  CryptoUtils.rsaPublicKeyFromPemPkcs1(clinet!.pubKeyBlock);
+  List encrypt = encryptSignMsg(plain,pubkey,clinet.privKey);
+
+  print(rsaVerify(pubkey, encrypt.first, encrypt.last));
+
+  print(rsaDecrypt(encrypt.first, clinet.privKey));
+
 }
