@@ -7,6 +7,7 @@ import 'dart:typed_data';
 import 'package:basic_utils/basic_utils.dart';
 import 'package:logger/logger.dart';
 import 'package:mobile_app/encryption/rsa.dart';
+import 'package:path/path.dart' as p;
 import "package:pointycastle/export.dart";
 
 import '../util.dart';
@@ -36,6 +37,7 @@ final logger = Logger(
 const chunkSize = 16777216; // 2^24 bytes, about 16.7 MB
 const IvSize = 12;
 const SymKeySize = 32;
+const DownloadPath = "./download";
 
 class _EncryptedData {
   Uint8List encryptedData;
@@ -319,7 +321,7 @@ class AesGcmChunk {
       await (this._stream as IOSink).close();
 
       // Rename file from "temp"
-      this.file = await file.rename(this.fileName);
+      this.file = await file.rename(p.join(DownloadPath, this.fileName));
     }
   }
 }
@@ -335,8 +337,9 @@ AesGcmChunk encryptSetup(String filename) {
 
 ///decryptSetup creates temporary file, make directory if it doesn't exist then return *AesGcmChunk
 AesGcmChunk decryptSetup() {
-  // TODO: add download path
-  final File f = File("temp");
+  // Concurrent transfer probably requires different file names
+  final File f = File(p.join(DownloadPath, "temp.tmp"));
+  f.createSync(recursive: true);
   return AesGcmChunk._(
       null, f, false, f.openWrite(mode: FileMode.write), "", 0, 0, 0, 0);
 }
