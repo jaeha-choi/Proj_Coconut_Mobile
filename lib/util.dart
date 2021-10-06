@@ -45,8 +45,17 @@ int bytesToUint32(Uint8List value, [int offsetInBytes = 0]) {
   // var buffer = value.buffer;
   // var byteData = new ByteData.view(buffer, offsetInBytes, 4);
   ByteData byteData =
-  ByteData.sublistView(value, offsetInBytes, offsetInBytes + 4);
+      ByteData.sublistView(value, offsetInBytes, offsetInBytes + 4);
   return byteData.getUint32(0);
+}
+
+/// Convert 4 bytes to unsigned int16
+int bytesToUint16(Uint8List value, [int offsetInBytes = 0]) {
+  // var buffer = value.buffer;
+  // var byteData = new ByteData.view(buffer, offsetInBytes, 4);
+  ByteData byteData =
+      ByteData.sublistView(value, offsetInBytes, offsetInBytes + 2);
+  return byteData.getUint16(0);
 }
 
 /// Convert unsigned in 16 to bytes
@@ -120,7 +129,7 @@ Future<List> writeBinary(RawSocket conn, File file) async {
   return [sizeInByte, true];
 }
 
-bool writeString(SecureSocket writer, String msg) {
+bool writeString(IOSink writer, String msg) {
   if (msg.isEmpty) {
     logger.e("msg cannot be empty");
     return false;
@@ -141,7 +150,7 @@ bool writeString(SecureSocket writer, String msg) {
 /// WriteString writes message to writer
 /// length of message cannot exceed BufferSize
 /// returns length of total bytes sent. Return -1 on error.
-int writeBytes(SecureSocket writer, Uint8List bytes) {
+int writeBytes(IOSink writer, Uint8List bytes) {
   try {
     // Get size(uint32) of total bytes to send
     var size = uint32ToBytes(bytes.length);

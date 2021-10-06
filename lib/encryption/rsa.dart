@@ -90,7 +90,7 @@ bool rsaVerify(RSAPublicKey publicKey, Uint8List signedData, Uint8List signature
 Uint8List rsaDecrypt(Uint8List cipherByte, RSAPrivateKey privateKey){
   var cipher = RSAEngine()
     ..init(false, PrivateKeyParameter<RSAPrivateKey>(privateKey));
-  return cipher.process(Uint8List.fromList(cipherByte));;
+  return cipher.process(Uint8List.fromList(cipherByte));
 }
 
 

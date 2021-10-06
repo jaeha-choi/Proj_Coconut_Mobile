@@ -63,9 +63,10 @@ Future<Client?> newClient() async {
     bool isPriv = File('key.priv').existsSync();
 
     // If at least one key is not found, create new key pairs
-    if (!(isPub && isPriv)) {
-      await createPemFile();
-    }
+    // TODO uncomment
+    // if (!(isPub && isPriv)) {
+    await createPemFile();
+    // }
 
     // Public key needs to be in a string format
     String pubKey = File('key.pub').readAsStringSync();
@@ -141,6 +142,7 @@ Future<bool> doGetAddCode(Client client) async {
 Future<int> getResult(Client client) async {
   // TODO: Convert error code (int) to an Error object
   Message msg = await readBytes(client.connDataIterator);
+  msg.data;
   return msg.errorCode;
 }
 
