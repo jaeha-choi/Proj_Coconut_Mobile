@@ -105,8 +105,6 @@ Future<Message> readBytes(StreamIterator streamIterator) async {
     logger.e("Error in readBytes: $e");
   }
 
-  logger.i("readBytes\tSize:$size\tErrorCode:$errorCode\tData:$data");
-
   return Message(size: size, errorCode: errorCode, data: data);
 }
 

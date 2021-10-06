@@ -57,9 +57,9 @@ class AesGcmChunk {
 
   bool get isEncrypt => _isEncrypt;
 
-  String _fileName;
+  String _filePath;
 
-  String get fileName => _fileName;
+  String get fileName => _filePath;
 
   // fileSize is uInt64 check
   int _fileSize;
@@ -77,11 +77,12 @@ class AesGcmChunk {
   // chunkNum is uInt16 check
   int _chunkNum;
 
-  AesGcmChunk._(this._key,
+  AesGcmChunk._(
+      this._key,
       this.file,
       this._isEncrypt,
       this._stream,
-      this._fileName,
+      this._filePath,
       this._fileSize,
       this._chunkCount,
       this._offset,
@@ -114,8 +115,12 @@ class AesGcmChunk {
       logger.d("Error in writeBytes while sending data signature");
     }
 
+    // Only send file name, not a path
+    int lastSeparator = this._filePath.lastIndexOf(Platform.pathSeparator);
+    String newPath = this._filePath.substring(lastSeparator + 1);
+
     _EncryptedData encryptedData =
-    _encryptBytes(Uint8List.fromList(utf8.encode(this._fileName)));
+        _encryptBytes(Uint8List.fromList(utf8.encode(newPath)));
 
     // Send IV (Nonce)
     writeBytes(writer, encryptedData.iv);
@@ -166,14 +171,14 @@ class AesGcmChunk {
 
     // Update variables for loop in Encrypt
     this._chunkNum += 1;
-    this._offset += plain.length;
+    this._offset += data.length;
     return encryptedData;
   }
 
   /// Encrypts plain and return encrypted data, IV that was used as [_EncryptedData]
   _EncryptedData _encryptBytes(Uint8List paddedPlaintext) {
     final _seed =
-    Uint8List.fromList(List.generate(32, (n) => _random.nextInt(255)));
+        Uint8List.fromList(List.generate(32, (n) => _random.nextInt(255)));
     final secRnd = SecureRandom("Fortuna")..seed(KeyParameter(_seed));
 
     final iv = secRnd.nextBytes(IvSize);
@@ -229,13 +234,12 @@ class AesGcmChunk {
     }
 
     // Update file name
-    this._fileName = utf8.decode(decryptFileName);
+    this._filePath = utf8.decode(decryptFileName);
 
     // Receive file and decrypt
     Uint8List decryptFileChunk;
     // Loop until every byte is fully received
     // this.readOffset and this.readChunkNum are updated in encryptedChunk
-    // TODO should i use chunk count or file size?
     while (this._chunkNum < this._chunkCount) {
       // read IV in plain text
       Message ivMsg = await readBytes(streamIterator);
@@ -258,8 +262,9 @@ class AesGcmChunk {
 
       decryptFileChunk = _decryptChunk(encryptData);
 
-      // Write decrypted data to stream
-      await this.file.writeAsBytes(decryptFileChunk, mode: FileMode.append);
+      // Write decrypted data to temp file
+      (this._stream as IOSink).write(utf8.decode(decryptFileChunk));
+      // await this.file.writeAsBytes(decryptFileChunk, mode: FileMode.append);
     }
     this.close();
   }
@@ -267,7 +272,6 @@ class AesGcmChunk {
   Uint8List _decryptChunk(_EncryptedData encryptData) {
     // Decrypt data
     Uint8List decryptedData = _decryptBytes(encryptData);
-    // TODO add checking statement
 
     // Convert chunk number bytes to uint16 (first two bytes)
     int currChunkNum =
@@ -302,13 +306,12 @@ class AesGcmChunk {
     Uint8List symKey = rsaDecrypt(encryptedMsg, receiverPrivKey);
     // Verify symmetric encryption key signature
     bool verify = rsaVerify(senderPubKey, encryptedMsg, signature);
-    if (verify == false) {
+    if (!verify) {
       logger.d("Error while decrypting symmetric encryption key");
     }
     return symKey;
   }
 
-  // TODO: Testing needed
   Future<void> close() async {
     if (!this.isEncrypt) {
       // Write file
@@ -316,11 +319,7 @@ class AesGcmChunk {
       await (this._stream as IOSink).close();
 
       // Rename file from "temp"
-      // https://api.dart.dev/stable/2.14.3/dart-io/File/rename.html
-      String path = file.path;
-      int lastSeparator = path.lastIndexOf(Platform.pathSeparator);
-      String newPath = path.substring(0, lastSeparator + 1) + this.fileName;
-      this.file = await file.rename(newPath);
+      this.file = await file.rename(this.fileName);
     }
   }
 }
@@ -330,15 +329,16 @@ class AesGcmChunk {
 AesGcmChunk encryptSetup(String filename) {
   final File f = File(filename);
   final size = f.lengthSync();
-  return AesGcmChunk._(
-      _genAESSymKey(), f, true, null, filename, size, size ~/ chunkSize, 0, 0);
+  return AesGcmChunk._(_genAESSymKey(), f, true, null, filename, size,
+      (size / chunkSize).ceil(), 0, 0);
 }
 
 ///decryptSetup creates temporary file, make directory if it doesn't exist then return *AesGcmChunk
 AesGcmChunk decryptSetup() {
   // TODO: add download path
   final File f = File("temp");
-  return AesGcmChunk._(null, f, false, f.openWrite(), "", 0, 0, 0, 0);
+  return AesGcmChunk._(
+      null, f, false, f.openWrite(mode: FileMode.write), "", 0, 0, 0, 0);
 }
 
 Uint8List _genAESSymKey([int length = 32]) {
@@ -348,13 +348,9 @@ Uint8List _genAESSymKey([int length = 32]) {
   return res;
 }
 
-Future<void> main() async {
-  AesGcmChunk encrypter = encryptSetup("./testdata/short_txt.txt");
-
-  // encrypter.encrypt(writer, receiverPubKey, senderPrivateKey)
-  AesGcmChunk decrtpyer = decryptSetup();
-  // encrypter.encrypt(writer, receiverPubKey, senderPrivateKey);
-}
-
-// decryptchunk
-// decrypt
+// Future<void> main() async {
+//   AesGcmChunk encrypter = encryptSetup("./testdata/short_txt.txt");
+//   // encrypter.encrypt(writer, receiverPubKey, senderPrivateKey)
+//   AesGcmChunk decrtpyer = decryptSetup();
+//   // encrypter.encrypt(writer, receiverPubKey, senderPrivateKey);
+// }
