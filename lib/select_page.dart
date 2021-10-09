@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 
 // import 'package:path_provider/path_provider.dart';
 import 'util.dart';
@@ -165,56 +166,58 @@ class _MySelectPageState extends State<SelectPage> {
                       style: TextStyle(fontSize: 11),
                     )),
             ),
-            // Center(
-            //     child: Column(
-            //       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            //       children: <Widget>[
-            //         // InkWell(
-            //         //   child: Text(
-            //         //     "Your Unique ID (Tap to copy)",
-            //         //     style: TextStyle(fontSize: 17),
-            //         //   ),
-            //         //   onTap: () {
-            //         //     // Copy uuid to clipboard
-            //         //     Clipboard.setData(new ClipboardData(text: uid));
-            //         //   },
-            //         // ),
-            //         // Container(
-            //         //     child: Padding(
-            //         //         padding: EdgeInsets.fromLTRB(0, 5, 0, 5),
-            //         //         child: InkWell(
-            //         //           child: Text(
-            //         //             uid,
-            //         //             style: TextStyle(fontSize: 17, backgroundColor: Colors.white12),
-            //         //           ),
-            //         //           onTap: () {
-            //         //             // Copy uuid to clipboard
-            //         //             Clipboard.setData(new ClipboardData(text: uid));
-            //         //           },
-            //         //         ))),
-            //         // Padding(
-            //         //   padding: EdgeInsets.all(9),
-            //         //   child: SizedBox(
-            //         //     width: 300.0,
-            //         //     height: 80.0,
-            //         //     child: TextField(
-            //         //       controller: myController,
-            //         //       obscureText: false,
-            //         //       decoration: InputDecoration(
-            //         //         border: OutlineInputBorder(
-            //         //           borderRadius: BorderRadius.all(
-            //         //             const Radius.circular(12.0),
-            //         //           ),
-            //         //         ),
-            //         //         labelText: "Receiver Unique ID",
-            //         //         labelStyle: TextStyle(color: Colors.white.withOpacity(0.8)),
-            //         //       ),
-            //         //     ),
-            //         //   ),
-            //         // )
-            //       ],
-            //     )),
-
+            Center(
+                child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: <Widget>[
+                InkWell(
+                  child: Text(
+                    "Your Unique ID (Tap to copy)",
+                    style: TextStyle(fontSize: 17),
+                  ),
+                  onTap: () {
+                    // Copy uuid to clipboard
+                    Clipboard.setData(new ClipboardData(text: uid));
+                  },
+                ),
+                Container(
+                    child: Padding(
+                        padding: EdgeInsets.fromLTRB(0, 5, 0, 5),
+                        child: InkWell(
+                          child: Text(
+                            uid,
+                            style: TextStyle(
+                                fontSize: 17, backgroundColor: Colors.white12),
+                          ),
+                          onTap: () {
+                            // Copy uuid to clipboard
+                            Clipboard.setData(new ClipboardData(text: uid));
+                          },
+                        ))),
+                Padding(
+                  padding: EdgeInsets.all(9),
+                  child: SizedBox(
+                    width: 300.0,
+                    height: 80.0,
+                    child: TextField(
+                      controller: myController,
+                      obscureText: false,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(
+                            const Radius.circular(12.0),
+                          ),
+                        ),
+                        labelText: "Receiver Unique ID",
+                        labelStyle:
+                            TextStyle(color: Colors.white.withOpacity(0.8)),
+                      ),
+                    ),
+                  ),
+                )
+              ],
+            )),
+            //
             Center(
                 child: Padding(
               padding: EdgeInsets.fromLTRB(0, 20, 0, 0),
@@ -227,20 +230,20 @@ class _MySelectPageState extends State<SelectPage> {
                     onPressed: getFile,
                     style: ElevatedButton.styleFrom(
                         primary: Colors.white12,
-                        textStyle: TextStyle(
-                            fontSize: 25, fontWeight: FontWeight.bold)),
+                            textStyle: TextStyle(
+                                fontSize: 25, fontWeight: FontWeight.bold)),
+                      ),
+                      ElevatedButton(
+                        child: Text("Select Images"),
+                        onPressed: getImage,
+                        style: ElevatedButton.styleFrom(
+                            primary: Colors.white12,
+                            textStyle: TextStyle(
+                                fontSize: 25, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
                   ),
-                  ElevatedButton(
-                    child: Text("Select Images"),
-                    onPressed: getImage,
-                    style: ElevatedButton.styleFrom(
-                        primary: Colors.white12,
-                        textStyle: TextStyle(
-                            fontSize: 25, fontWeight: FontWeight.bold)),
-                  ),
-                ],
-              ),
-            )),
+                )),
             ElevatedButton(
               child: Text("Send File"),
               onPressed: sendFile,

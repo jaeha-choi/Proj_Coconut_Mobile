@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
-// import 'package:mobile_app/front_page.dart';
 import 'front_page.dart';
 
-void main() {
+Future<void> main() async {
   runApp(MyApp());
 }
 

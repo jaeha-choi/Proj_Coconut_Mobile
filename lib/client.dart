@@ -96,18 +96,20 @@ class Client {
   }
 
   /// Sends command(Get Add Code)
-  Future<bool> doGetAddCode(Client client) async {
+  Future<void> doGetAddCode(Client client) async {
     // Send the command to the server
     try {
       writeString(client.conn, command(GetAddCode));
       logger.i("writeString command (DoGetcode()) is done");
       Message msg = await readBytes(client.connDataIterator);
       logger.i("Add Code: ${utf8.decode(msg.data)}");
+      client.addCode = utf8.decode(msg.data);
       await getResult(client);
-      return true;
+      // return utf8.decode(msg.data);
+      // return true;
     } catch (e) {
       logger.e("Error in doGetAddCode: $e");
-      return false;
+      // return false;
     }
   }
 }
@@ -148,16 +150,6 @@ Future<Client?> newClient() async {
   return null;
 }
 
-Future<String> addCode() async {
-  Client? client = await newClient();
-  if (client == null) {
-    // TODO: Error handling
-    print("Client is null");
-  }
-  await client!.connect(client);
-  client.doGetAddCode(client);
-  return client.addCode;
-}
 
 Future<void> main() async {
   Logger.level = Level.debug;
