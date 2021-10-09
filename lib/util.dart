@@ -5,17 +5,19 @@ import 'dart:typed_data';
 
 import 'package:logger/logger.dart';
 
+import 'error.dart';
+
 const int rsaKeySize = 4096;
 const int bufferSize = 4096;
 
 class Message {
   int size;
-  int errorCode;
+  Error errorCode;
   Uint8List data;
 
   Message({
     required int size,
-    required int errorCode,
+    required Error errorCode,
     required Uint8List data,
   })  : size = size,
         errorCode = errorCode,
@@ -35,7 +37,7 @@ var logger = Logger(
       printEmojis: true,
       // Print an emoji for each log message
       printTime: false // Should each log print contain a timestamp
-  ),
+      ),
 );
 
 /// ----Conversions----
@@ -79,7 +81,7 @@ Uint8List uint32ToBytes(int value) =>
 
 Future<Message> readBytes(StreamIterator streamIterator) async {
   int size = -1;
-  int errorCode = 255; // TODO: update to actual "unknown error" error code
+  int errorCode = unKnownCodeError.errorCode;
   Uint8List data = Uint8List(0);
 
   try {
@@ -91,6 +93,12 @@ Future<Message> readBytes(StreamIterator streamIterator) async {
     Uint8List sizeErrorCode = streamIterator.current;
     size = bytesToUint32(sizeErrorCode);
     errorCode = sizeErrorCode[4];
+    if (errorCode != 0) {
+      // if errorCode is not in Error class, then return unknown Error
+      if (!error.asMap().containsKey(errorCode)) {
+        errorCode = unKnownCodeError.errorCode;
+      }
+    }
 
     // If the packets can be trimmed before received, check if the size of
     // received data matches the size of the original msg
@@ -104,8 +112,7 @@ Future<Message> readBytes(StreamIterator streamIterator) async {
   } catch (e) {
     logger.e("Error in readBytes: $e");
   }
-
-  return Message(size: size, errorCode: errorCode, data: data);
+  return Message(size: size, errorCode: error[errorCode], data: data);
 }
 
 // writeBinary opens file and write byte data to writer

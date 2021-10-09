@@ -52,7 +52,7 @@ String encodePublicKeyToPemPKCS1(RSAPublicKey publicKey) {
 
 /// Creates [RSAPublicKey] & [RSAPrivateKey] and save them locally.
 /// Returns true if PEM files are created, false otherwise.
-Future<bool> createPemFile() async {
+Future<bool> createPemFile(String appDocPath) async {
   try {
     final pair = CryptoUtils.generateRSAKeyPair(keySize: rsaKeySize);
 
@@ -60,9 +60,9 @@ Future<bool> createPemFile() async {
     final rsaPublic = pair.publicKey as RSAPublicKey;
     final rsaPrivate = pair.privateKey as RSAPrivateKey;
 
-    File('key.priv').writeAsStringSync(
+    File('$appDocPath/key.priv').writeAsStringSync(
         CryptoUtils.encodeRSAPrivateKeyToPemPkcs1(rsaPrivate));
-    File('key.pub')
+    File('$appDocPath/key.pub')
         .writeAsStringSync(CryptoUtils.encodeRSAPublicKeyToPemPkcs1(rsaPublic));
 
     return true;
