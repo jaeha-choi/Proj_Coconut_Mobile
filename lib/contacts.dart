@@ -35,7 +35,6 @@ class _Contacts extends State<Contacts> {
 
     // int index = 0;
     List<Person> contact = [Person('Robin Seo', 'pubKey')];
-    final Size size = MediaQuery.of(context).size;
     double padding = 10;
     final sidePadding =
         EdgeInsets.symmetric(horizontal: padding, vertical: padding);
@@ -162,12 +161,6 @@ class _Contacts extends State<Contacts> {
               ],
             )));
 
-    // Container(
-    //     width: size.width,
-    //     height: size.height,
-    // child: Stack(
-    //   children: [
-    //     Padding(
     //       padding: sidePadding,
     //       child: Row(
     //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -185,24 +178,3 @@ class _Contacts extends State<Contacts> {
     // )
   }
 }
-// extendBody: Container,
-//  Container(
-
-//     child: Column(children: [
-//       Padding(
-//           padding: EdgeInsets.symmetric(
-//               vertical: padding, horizontal: padding),
-//           child:
-//           Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-//             BoarderBox(
-//               width: 50,
-//               height: 50,
-//               padding: const EdgeInsets.all(8.0),
-//               child: Icon(
-//                 Icons.person_add,
-//                 color: Colors.black,
-//               ),
-//             )
-//           ])
-//       )
-//     ])),

@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import 'Album.dart';
 import 'client.dart';
 import 'contacts.dart';
 
@@ -51,27 +52,6 @@ class _FrontPageState extends State<FrontPage> {
     return client;
   }
 
-  int _selectedIndex = 0; //New
-
-  // ///New
-  // static  List<Widget> _pages = <Widget>[
-  //    Contacts(client : client),
-  //   //Album()
-  //   //Files()
-  //   Icon(
-  //     Icons.call,
-  //     size: 150,
-  //   ),
-  //   // Show album list
-  //   Icon(
-  //     Icons.camera,
-  //     size: 150,
-  //   ),
-  //   Icon(
-  //     Icons.chat,
-  //     size: 150,
-  //   ),
-  // ];
 
 
   void _onItemTapped(int index) {
@@ -88,25 +68,21 @@ class _FrontPageState extends State<FrontPage> {
     Widget widget = Container();
 
     switch (_index) {
-    // Contacts
+      // Contacts
       case 0:
         widget = Contacts(client: client);
         break;
-
+      // Album
       case 1:
-        widget = FlutterLogo();
+        widget = Album(client: client);
         break;
+      case 2:
+      // widget = ();
     }
 
-    final Size size = MediaQuery
-        .of(context)
-        .size;
+    final Size size = MediaQuery.of(context).size;
     return SafeArea(
       child: Scaffold(
-        // body: IndexedStack(
-        //   children: _pages,
-        //   index: _selectedIndex,
-        // ),
           body: widget,
 
           //
@@ -115,7 +91,7 @@ class _FrontPageState extends State<FrontPage> {
             selectedFontSize: 15,
             selectedIconTheme: IconThemeData(color: Colors.teal, size: 30),
             selectedLabelStyle:
-            TextStyle(fontWeight: FontWeight.bold, color: Colors.teal),
+                TextStyle(fontWeight: FontWeight.bold, color: Colors.teal),
             backgroundColor: Colors.black54,
             elevation: 0,
             items: const <BottomNavigationBarItem>[
@@ -132,7 +108,7 @@ class _FrontPageState extends State<FrontPage> {
                 label: 'File',
               )
             ],
-            currentIndex: _selectedIndex,
+            currentIndex: _index,
             onTap: _onItemTapped,
           )),
     );
