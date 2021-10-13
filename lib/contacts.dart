@@ -20,7 +20,6 @@ class _Contacts extends State<Contacts> {
   _Contacts(this.client);
 
   Widget build(BuildContext context) {
-    // int itemCount = 15;
     // var contacts = new Map();
     String addCode = client!.addCode;
 
@@ -160,21 +159,5 @@ class _Contacts extends State<Contacts> {
                 )),
               ],
             )));
-
-    //       padding: sidePadding,
-    //       child: Row(
-    //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    //         children: [
-    //           BoarderBox(
-    //               padding: sidePadding,
-    //               width: 100,
-    //               height: 50,
-    //               child: Text('Contacts'))
-    //         ],
-    //       ),
-    //     )
-    //   ],
-    // )
-    // )
   }
 }

@@ -1,5 +1,3 @@
-
-
 const String Quit ="QUIT";
 const String RequestRelay ="RELY";
 const String EndRelay ="ERLY";

@@ -2,57 +2,24 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'Album.dart';
+import 'File.dart';
 import 'client.dart';
 import 'contacts.dart';
 
 
 class FrontPage extends StatefulWidget {
-  final String title;
+  Client? client;
 
-  FrontPage({Key? key, required this.title}) : super(key: key);
-
+  FrontPage({required Client? client}) : this.client = client;
 
   @override
-  State<StatefulWidget> createState() => _FrontPageState();
+  State<StatefulWidget> createState() => _FrontPageState(client);
 }
 
 class _FrontPageState extends State<FrontPage> {
-
-  // TODO need initialize client, when user starting the app
   Client? client;
 
-  @override
-  void initState() {
-    // This is the proper place to make the async calls
-    // This way they only get called once
-
-    // During development, if you change this code,
-    // you will need to do a full restart instead of just a hot reload
-
-    // You can't use async/await here, because
-    // We can't mark this method as async because of the @override
-    // You could also make and call an async method that does the following
-    loadAsyncData().then((val) {
-      // If we need to rebuild the widget with the resulting data,
-      // make sure to use `setState`
-      setState(() {
-        client = val!;
-      });
-    });
-  }
-
-  Future<Client?> loadAsyncData() async {
-    Client? client = await newClient();
-    if (client == null) {
-      // TODO: Error handling
-      print("Client is null");
-    }
-    await client!.connect(client);
-    await client.doGetAddCode(client);
-    return client;
-  }
-
-
+  _FrontPageState(this.client);
 
   void _onItemTapped(int index) {
     setState(() {
@@ -67,23 +34,30 @@ class _FrontPageState extends State<FrontPage> {
   Widget build(BuildContext context) {
     Widget widget = Container();
 
-    switch (_index) {
-      // Contacts
-      case 0:
-        widget = Contacts(client: client);
-        break;
-      // Album
-      case 1:
-        widget = Album(client: client);
-        break;
-      case 2:
-      // widget = ();
-    }
+    // switch (_index) {
+    //   // Contacts
+    //   case 0:
+    //     widget = Contacts(client: client);
+    //     break;
+    //   // Album
+    //   case 1:
+    //     widget = Album(client: client);
+    //     break;
+    //   case 2:
+    //   // widget = ();
+    // }
 
     final Size size = MediaQuery.of(context).size;
     return SafeArea(
       child: Scaffold(
-          body: widget,
+          body: IndexedStack(
+            index: _index,
+            children: [
+              widget = Contacts(client: client),
+              widget = Album(client: client),
+              widget = SelectFile(client: client),
+            ],
+          ),
 
           //
           bottomNavigationBar: BottomNavigationBar(

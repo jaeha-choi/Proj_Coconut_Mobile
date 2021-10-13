@@ -5,21 +5,21 @@ import 'package:flutter/material.dart';
 
 import 'client.dart';
 
-class Album extends StatefulWidget {
+class SelectFile extends StatefulWidget {
   Client? client;
 
-  Album({required this.client});
+  SelectFile({required this.client});
 
   // Contacts
 
   @override
-  _Album createState() => _Album(client);
+  _SelectFile createState() => _SelectFile(client);
 }
 
-class _Album extends State<Album> {
+class _SelectFile extends State<SelectFile> {
   Client? client;
 
-  _Album(this.client);
+  _SelectFile(this.client);
 
   late List<File> filePath;
   final files = new Map();
@@ -60,7 +60,7 @@ class _Album extends State<Album> {
                       ElevatedButton(
                         child: Text('Select Files',
                             style: TextStyle(fontSize: 24)),
-                        onPressed: getImage,
+                        onPressed: getFile,
                       ),
                       ElevatedButton(
                         child: Text('Send', style: TextStyle(fontSize: 24)),
@@ -71,14 +71,15 @@ class _Album extends State<Album> {
     ));
   }
 
-  Future getImage() async {
+  // getFile gets any types of files (single or multiple) from devices (android and iPhone)
+  Future getFile() async {
     FilePickerResult? result = await FilePicker.platform
-        .pickFiles(allowMultiple: true, type: FileType.image);
+        .pickFiles(allowMultiple: true, type: FileType.any);
+
     if (result != null) {
       filePath = result.paths.map((path) => File(path!)).toList();
       String localName;
       String key;
-
       for (int i = 0; i < filePath.length; i++) {
         localName = filePath[i].path;
         key = localName.substring(
@@ -86,18 +87,10 @@ class _Album extends State<Album> {
 
         // no collision from key
         files.putIfAbsent(key, () => filePath[i]);
-        print(files);
         setState(() {});
       }
     } else {
       // User canceled the picker
     }
-    // files.forEach((k,v) => print('${k}: ${v}'));
   }
-
-// void sendFile(Map files) async {
-//   for (var f in files.keys){
-//     writeBinary(conn, file)
-//   }
-// }
 }
