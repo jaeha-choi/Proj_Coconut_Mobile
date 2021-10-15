@@ -9,21 +9,9 @@ Future<void> main() async {
 }
 
 class MyApp extends StatelessWidget {
-
   @override
   Widget build(BuildContext context) {
-    return
-
-        // StatefulWrapper(
-        //   onInit: () {
-        //     _getThingsOnStartup().then((value) {
-        //       print('Async done');
-        //       client = value;
-        // print(client.addCode);
-        // });
-        // },
-        // child:
-        MaterialApp(
+    return MaterialApp(
       theme: ThemeData(
         primarySwatch: Colors.teal,
         brightness: Brightness.dark,

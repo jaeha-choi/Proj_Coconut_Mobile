@@ -81,18 +81,18 @@ Uint8List pemToSha256(String pubKey) {
 
 /// Verifies the RSA signature
 /// Returns true if it is a valid signature
-bool rsaVerify(RSAPublicKey publicKey, Uint8List signedData, Uint8List signature,{String algorithm = 'SHA-256/RSA'}){
+bool rsaVerify(
+    RSAPublicKey publicKey, Uint8List signedData, Uint8List signature,
+    {String algorithm = 'SHA-256/RSA'}) {
   return CryptoUtils.rsaVerify(publicKey, signedData, signature);
 }
 
-
 /// Decrypt the given [cipherMessage] using the given RSA [privateKey].
-Uint8List rsaDecrypt(Uint8List cipherByte, RSAPrivateKey privateKey){
+Uint8List rsaDecrypt(Uint8List cipherByte, RSAPrivateKey privateKey) {
   var cipher = RSAEngine()
     ..init(false, PrivateKeyParameter<RSAPrivateKey>(privateKey));
   return cipher.process(Uint8List.fromList(cipherByte));
 }
-
 
 Future<void> main() async {
   String str = "Hello Guri";
