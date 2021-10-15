@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import 'client.dart';
-import 'contact_class.dart';
+import '../client.dart';
+import '../utils/contact_class.dart';
 
 class Contacts extends StatefulWidget {
-  Client? client;
+  Client client;
 
   Contacts({required this.client});
 
@@ -15,13 +15,13 @@ class Contacts extends StatefulWidget {
 }
 
 class _Contacts extends State<Contacts> {
-  Client? client;
+  Client client;
 
   _Contacts(this.client);
 
   Widget build(BuildContext context) {
     // var contacts = new Map();
-    String addCode = client!.addCode;
+    String addCode = client.addCode;
 
     String addLabel = "Your ID: $addCode";
 
@@ -124,7 +124,7 @@ class _Contacts extends State<Contacts> {
                             ))),
                     ElevatedButton(
                       onPressed: () async {
-                        await client!.doGetAddCode(client!);
+                        await client.doGetAddCode(client);
                         changeText();
                       },
                       child: Icon(

@@ -1,25 +1,38 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import 'Album.dart';
-import 'File.dart';
-import 'client.dart';
-import 'contacts.dart';
-
+import '../client.dart';
+import 'album_page.dart';
+import 'contacts_page.dart';
+import 'file_page.dart';
 
 class FrontPage extends StatefulWidget {
-  Client? client;
+  // Client? client;
+  const FrontPage({Key? key}) : super(key: key);
 
-  FrontPage({required Client? client}) : this.client = client;
+  // FrontPage({required Client? client}) : this.client = client;
 
   @override
-  State<StatefulWidget> createState() => _FrontPageState(client);
+  State<StatefulWidget> createState() => _FrontPageState();
 }
 
 class _FrontPageState extends State<FrontPage> {
-  Client? client;
+  late Client client;
 
-  _FrontPageState(this.client);
+  // _FrontPageState(this.client);
+
+  @override
+  void initState() {
+    createClient().then((result) {
+      setState(() {
+        client = result;
+      });
+    });
+  }
+
+  _getThingsOnStartup() async {
+    return await createClient();
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -32,7 +45,7 @@ class _FrontPageState extends State<FrontPage> {
 
   @override
   Widget build(BuildContext context) {
-    Widget widget = Container();
+    // Widget widget = Container();
 
     // switch (_index) {
     //   // Contacts
@@ -47,19 +60,21 @@ class _FrontPageState extends State<FrontPage> {
     //   // widget = ();
     // }
 
-    final Size size = MediaQuery.of(context).size;
+    if (client == null) {
+      // This is what we show while we're loading
+      return new Container();
+    }
+
     return SafeArea(
       child: Scaffold(
           body: IndexedStack(
             index: _index,
-            children: [
-              widget = Contacts(client: client),
-              widget = Album(client: client),
-              widget = SelectFile(client: client),
+            children: <Widget>[
+              Contacts(client: client),
+              Album(client: client),
+              SelectFile(client: client),
             ],
           ),
-
-          //
           bottomNavigationBar: BottomNavigationBar(
             iconSize: 30,
             selectedFontSize: 15,

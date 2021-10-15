@@ -10,7 +10,7 @@ import 'package:mobile_app/encryption/rsa.dart';
 import 'package:path/path.dart' as p;
 import "package:pointycastle/export.dart";
 
-import '../util.dart';
+import '../utils/util.dart';
 
 final Random _random = Random.secure();
 

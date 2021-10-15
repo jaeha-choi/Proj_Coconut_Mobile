@@ -7,7 +7,7 @@ import 'package:logger/logger.dart';
 import 'package:mobile_app/client.dart';
 import "package:pointycastle/export.dart";
 
-import '../util.dart';
+import '../utils/util.dart';
 
 final logger = Logger(
   printer: PrettyPrinter(
@@ -102,11 +102,11 @@ Future<void> main() async {
   print("Plain message in byte: $plain");
   Client? clinet = await newClient();
 
-  RSAPublicKey pubkey =  CryptoUtils.rsaPublicKeyFromPemPkcs1(clinet!.pubKeyBlock);
-  List encrypt = encryptSignMsg(plain,pubkey,clinet.privKey);
+  RSAPublicKey pubkey =
+      CryptoUtils.rsaPublicKeyFromPemPkcs1(clinet.pubKeyBlock);
+  List encrypt = encryptSignMsg(plain, pubkey, clinet.privKey);
 
   print(rsaVerify(pubkey, encrypt.first, encrypt.last));
 
   print(rsaDecrypt(encrypt.first, clinet.privKey));
-
 }

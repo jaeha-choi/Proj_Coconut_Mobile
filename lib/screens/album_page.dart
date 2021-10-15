@@ -3,10 +3,10 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
-import 'client.dart';
+import '../client.dart';
 
 class Album extends StatefulWidget {
-  Client? client;
+  Client client;
 
   Album({required this.client});
 
@@ -17,7 +17,7 @@ class Album extends StatefulWidget {
 }
 
 class _Album extends State<Album> {
-  Client? client;
+  Client client;
 
   _Album(this.client);
 

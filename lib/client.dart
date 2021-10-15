@@ -7,11 +7,11 @@ import 'dart:typed_data';
 import 'package:basic_utils/basic_utils.dart';
 import 'package:logger/logger.dart';
 import 'package:mobile_app/encryption/rsa.dart';
-import 'package:mobile_app/util.dart';
+import 'package:mobile_app/utils/util.dart';
 import 'package:path_provider/path_provider.dart';
 
-import 'commands.dart';
-import 'error.dart';
+import 'utils/commands.dart';
+import 'utils/error.dart';
 
 final logger = Logger(
   printer: PrettyPrinter(
@@ -116,40 +116,50 @@ class Client {
 
 /// Creates new [Client] and return it.
 /// Returns null upon error.
-Future<Client?> newClient() async {
-  try {
-    // Open RSA keys, if the user already got one
-    Directory appDocDir = await getApplicationDocumentsDirectory();
-    String appDocPath = appDocDir.path;
-    bool isPub = File('$appDocPath/key.pub').existsSync();
-    bool isPriv = File('$appDocPath/key.priv').existsSync();
+Future<Client> newClient() async {
+  // try {
+  // Open RSA keys, if the user already got one
+  Directory appDocDir = await getApplicationDocumentsDirectory();
+  String appDocPath = appDocDir.path;
+  bool isPub = File('$appDocPath/key.pub').existsSync();
+  bool isPriv = File('$appDocPath/key.priv').existsSync();
 
-    // If at least one key is not found, create new key pairs
-    if (!(isPub && isPriv)) {
-      await createPemFile(appDocPath);
-    }
-
-    // Public key needs to be in a string format
-    String pubKey = File('$appDocPath/key.pub').readAsStringSync();
-    // Private key needs to be in a PEM format
-    RSAPrivateKey privateKey = CryptoUtils.rsaPrivateKeyFromPemPkcs1(
-        File('$appDocPath/key.priv').readAsStringSync());
-
-    return new Client(
-      serverIP: "127.0.0.1",
-      serverPort: 9129,
-      // conn: null,
-      privKey: privateKey,
-      pubKey: pubKey,
-      addCode: "",
-      // stream: null,
-    );
-  } catch (e) {
-    logger.e('Error in newClient() $e');
+  // If at least one key is not found, create new key pairs
+  if (!(isPub && isPriv)) {
+    await createPemFile(appDocPath);
   }
-  return null;
-}
 
+  // Public key needs to be in a string format
+  String pubKey = File('$appDocPath/key.pub').readAsStringSync();
+  // Private key needs to be in a PEM format
+  RSAPrivateKey privateKey = CryptoUtils.rsaPrivateKeyFromPemPkcs1(
+      File('$appDocPath/key.priv').readAsStringSync());
+
+  return new Client(
+    serverIP: "127.0.0.1",
+    serverPort: 9129,
+    // conn: null,
+    privKey: privateKey,
+    pubKey: pubKey,
+    addCode: "",
+    // stream: null,
+  );
+}
+// catch (e) {
+//   logger.e('Error in newClient() $e');
+// }
+// return null;
+
+Future<Client> createClient() async {
+  Client client = await newClient();
+  if (client == null) {
+    //     TODO: Error handling
+    print("Client is null");
+  }
+  await client.connect(client);
+  await client.doGetAddCode(client);
+  return client;
+}
 
 Future<void> main() async {
   Logger.level = Level.debug;
