@@ -95,6 +95,11 @@ class Client {
     return msg.errorCode;
   }
 
+  /// Remove Add Code
+  void doRemoveAddCode(Client client) {
+    writeString(client.conn, command(RemoveAddCode));
+  }
+
   /// Sends command(Get Add Code)
   Future<void> doGetAddCode(Client client) async {
     // Send the command to the server

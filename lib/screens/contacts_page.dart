@@ -123,8 +123,11 @@ class _Contacts extends State<Contacts> {
                               ),
                             ))),
                     ElevatedButton(
-                      onPressed: () async {
-                        await client.doGetAddCode(client);
+                      onPressed: () {
+                        // TODO FIX THE ISSUE
+                        print("FAS");
+                        client.doRemoveAddCode;
+                        // await client.doGetAddCode(client);
                         changeText();
                       },
                       child: Icon(

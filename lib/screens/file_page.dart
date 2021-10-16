@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import '../client.dart';
 
 class SelectFile extends StatefulWidget {
-  Client? client;
+  Client client;
 
   SelectFile({required this.client});
 
@@ -17,7 +17,7 @@ class SelectFile extends StatefulWidget {
 }
 
 class _SelectFile extends State<SelectFile> {
-  Client? client;
+  Client client;
 
   _SelectFile(this.client);
 

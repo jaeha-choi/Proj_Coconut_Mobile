@@ -7,7 +7,6 @@ import 'contacts_page.dart';
 import 'file_page.dart';
 
 class FrontPage extends StatefulWidget {
-  // Client? client;
   const FrontPage({Key? key}) : super(key: key);
 
   // FrontPage({required Client? client}) : this.client = client;
@@ -19,9 +18,16 @@ class FrontPage extends StatefulWidget {
 class _FrontPageState extends State<FrontPage> {
   late Client client;
   bool init = false;
+  Future? myFuture;
+
+  @override
+  void initState() {
+    myFuture = initClient();
+  }
 
   Future initClient() async {
     if (!this.init) {
+      print("Should only print one time");
       this.client = await createClient();
       this.init = true;
     }
@@ -40,7 +46,7 @@ class _FrontPageState extends State<FrontPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: FutureBuilder(
-          future: initClient(),
+          future: myFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.done) {
               return Scaffold(

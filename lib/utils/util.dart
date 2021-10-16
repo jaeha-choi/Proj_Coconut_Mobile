@@ -42,6 +42,24 @@ var logger = Logger(
 
 /// ----Conversions----
 
+/// Convert integer to byte
+Uint8List? convertIntByte(value, Endian order, int bytesSize) {
+  try {
+    final kMaxBytes = 8;
+    var bytes = Uint8List(kMaxBytes)
+      ..buffer.asByteData().setInt64(0, value, order);
+    List<int> intArray;
+    if (order == Endian.big) {
+      intArray = bytes.sublist(kMaxBytes - bytesSize, kMaxBytes).toList();
+    } else {
+      intArray = bytes.sublist(0, bytesSize).toList();
+    }
+    return Uint8List.fromList(intArray);
+  } catch (e) {
+    print('util convert error: $e');
+  }
+}
+
 /// Convert 4 bytes to unsigned int32
 int bytesToUint32(Uint8List value, [int offsetInBytes = 0]) {
   // var buffer = value.buffer;
@@ -81,7 +99,7 @@ Uint8List uint32ToBytes(int value) =>
 
 Future<Message> readBytes(StreamIterator streamIterator) async {
   int size = -1;
-  int errorCode = unKnownCodeError.errorCode;
+  int errorCode = unKnownCodeError.errorCode[0];
   Uint8List data = Uint8List(0);
 
   try {
@@ -96,7 +114,7 @@ Future<Message> readBytes(StreamIterator streamIterator) async {
     if (errorCode != 0) {
       // if errorCode is not in Error class, then return unknown Error
       if (!error.asMap().containsKey(errorCode)) {
-        errorCode = unKnownCodeError.errorCode;
+        errorCode = unKnownCodeError.errorCode[0];
       }
     }
 
@@ -134,22 +152,21 @@ Future<List> writeBinary(RawSocket conn, File file) async {
   return [sizeInByte, true];
 }
 
-bool writeString(IOSink writer, String msg) {
+int writeString(IOSink writer, String msg) {
   if (msg.isEmpty) {
     logger.e("msg cannot be empty");
-    return false;
+    return -1;
   }
   try {
-    Uint8List? bytes = utf8.encode(msg) as Uint8List?;
+    Uint8List bytes = Uint8List.fromList(utf8.encode(msg));
     if (bytes == null) {
       throw Exception("bytes cannot be null");
     }
-    writeBytes(writer, bytes);
-    return true;
+    return writeBytes(writer, bytes);
   } catch (e) {
     logger.e("Error in writeString(): $e");
   }
-  return false;
+  return -1;
 }
 
 /// WriteString writes message to writer
@@ -161,9 +178,9 @@ int writeBytes(IOSink writer, Uint8List bytes) {
     var size = uint32ToBytes(bytes.length);
 
     // Write any error code [uint8] to writer
-    // TODO: Add actual error code, instead of just 0
-    Uint8List code = Uint8List(1);
+    Uint8List code = noError.errorCode;
     // TODO: Double check + operator works as intended
+    // print(size+ code);
     writer.add(size + code);
 
     // Write bytes to writer
