@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../client.dart';
 import '../utils/contact_class.dart';
 
+enum ButtonState { init, loading, done }
+
 class Contacts extends StatefulWidget {
   Client client;
 
@@ -15,17 +17,21 @@ class Contacts extends StatefulWidget {
 }
 
 class _Contacts extends State<Contacts> {
+  ButtonState state = ButtonState.init;
+
   Client client;
 
   _Contacts(this.client);
 
-  bool isOnLine = true;
-
   Widget build(BuildContext context) {
+    bool isDone = state == ButtonState.done;
+    bool isOnLine = state == ButtonState.init;
+
     // var contacts = new Map();
     String addCode = client.addCode;
 
     String addLabel = "Your ID: $addCode";
+    // Text add = Text("Your ID: $addcode");
 
     bool shouldDisplay = false;
 
@@ -42,8 +48,11 @@ class _Contacts extends State<Contacts> {
 
     Widget buildOffLine(bool isOnLine) => ElevatedButton(
         onPressed: () async {
+          setState(() => state = ButtonState.loading);
+          await Future.delayed(Duration(seconds: 2));
           await client.doGetAddCode(client);
           changeStatus();
+          setState(() => state = ButtonState.init);
         },
         child: Text(
           'OffLine',
@@ -57,8 +66,11 @@ class _Contacts extends State<Contacts> {
     Widget buildOnline() => ElevatedButton(
         onPressed: () async {
           await client.doRemoveAddCode(client);
+          setState(() => state = ButtonState.loading);
+          await Future.delayed(Duration(seconds: 2));
           changeStatus();
           changeText();
+          setState(() => state = ButtonState.done);
         },
         child: Text(
           'Online',
@@ -68,6 +80,12 @@ class _Contacts extends State<Contacts> {
             shape: MaterialStateProperty.all(StadiumBorder()),
             backgroundColor: MaterialStateProperty.all(Colors.green),
             textStyle: MaterialStateProperty.all(TextStyle(fontSize: 15))));
+
+    Widget loading(bool isDone) {
+      return Container(
+        child: isDone ? buildOffLine(isOnLine) : CircularProgressIndicator(),
+      );
+    }
 
     // int index = 0;
     List<Person> contact = [Person('Robin Seo', 'pubKey')];
@@ -82,7 +100,7 @@ class _Contacts extends State<Contacts> {
                   children: <Widget>[
                     Padding(padding: sidePadding),
                     Row(
-                        // mainAxisAlignment: MainAxisAlignment.start,
+                      // mainAxisAlignment: MainAxisAlignment.start,
                         children: [
                           Padding(padding: sidePadding),
                           Text(
@@ -96,7 +114,6 @@ class _Contacts extends State<Contacts> {
                             child: Icon(
                               Icons.person_add,
                               // TODO need to finish implementing
-
                               // color: Colors.black,
                             ),
                             style: OutlinedButton.styleFrom(
@@ -164,9 +181,11 @@ class _Contacts extends State<Contacts> {
                                 ))),
                         ElevatedButton(
                           onPressed: () async {
-                            await client.doRemoveAddCode(client);
-                            await client.doGetAddCode(client);
-                            changeText();
+                            if (isOnLine) {
+                              await client.doRemoveAddCode(client);
+                              await client.doGetAddCode(client);
+                              changeText();
+                            }
                           },
                           child: Icon(
                             Icons.refresh,
@@ -179,31 +198,29 @@ class _Contacts extends State<Contacts> {
                         ),
                         Spacer(),
                         Container(
-                          child:
-                              isOnLine ? buildOnline() : buildOffLine(isOnLine),
-                        ),
+                            child: isOnLine ? buildOnline() : loading(isDone)),
                         Spacer()
                       ],
                     ),
                     Expanded(
-                        // height: 600,
-                        // width: 400,
+                      // height: 600,
+                      // width: 400,
                         child: ListView.builder(
-                      padding: const EdgeInsets.all(8),
-                      itemCount: contact.length,
-                      itemBuilder: (BuildContext context, int index) {
-                        if (index == 0) return HeaderTile();
-                        return PersonTile(contact[index - 1]);
-                      },
-                      //       shrinkWrap: true,
-                      //       itemCount: itemCount,
-                      //       itemBuilder: (BuildContext context, int index) {
-                      //      return ListTile(
-                      //         //TODO need to implement delete file from file list
-                      //
-                      //           title: Text(contacts.keys.toList()[index]));
-                      // },
-                    )),
+                          padding: const EdgeInsets.all(8),
+                          itemCount: contact.length,
+                          itemBuilder: (BuildContext context, int index) {
+                            if (index == 0) return HeaderTile();
+                            return PersonTile(contact[index - 1]);
+                          },
+                          //       shrinkWrap: true,
+                          //       itemCount: itemCount,
+                          //       itemBuilder: (BuildContext context, int index) {
+                          //      return ListTile(
+                          //         //TODO need to implement delete file from file list
+                          //
+                          //           title: Text(contacts.keys.toList()[index]));
+                          // },
+                        )),
                   ],
                 ))));
   }
