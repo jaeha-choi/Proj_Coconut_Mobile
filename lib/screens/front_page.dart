@@ -27,7 +27,6 @@ class _FrontPageState extends State<FrontPage> {
 
   Future initClient() async {
     if (!this.init) {
-      print("Should only print one time");
       this.client = await createClient();
       this.init = true;
     }

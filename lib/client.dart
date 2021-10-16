@@ -96,8 +96,26 @@ class Client {
   }
 
   /// Remove Add Code
-  void doRemoveAddCode(Client client) {
-    writeString(client.conn, command(RemoveAddCode));
+  Future<void> doRemoveAddCode(Client client) async {
+    try {
+      // Send the remove add code command
+      int err = writeString(client.conn, command(RemoveAddCode));
+      if (err == -1) {
+        logger.d("Error while sending command(Remove Add Code) to the server");
+      }
+      // send the add code that you want to erase
+      int err2 = writeString(client.conn, client.addCode);
+      if (err2 == -1) {
+        logger.d("Error while sending free add code to the server");
+      }
+
+      // Erase add code front client
+      client.addCode = '';
+
+      await getResult(client);
+    } catch (e) {
+      logger.e("Error in doRemoveAddCode: $e");
+    }
   }
 
   /// Sends command(Get Add Code)
