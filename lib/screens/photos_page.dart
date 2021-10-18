@@ -5,21 +5,21 @@ import 'package:flutter/material.dart';
 
 import '../client.dart';
 
-class Album extends StatefulWidget {
+class Photos extends StatefulWidget {
   Client client;
 
-  Album({required this.client});
+  Photos({required this.client});
 
   // Contacts
 
   @override
-  _Album createState() => _Album(client);
+  _Photos createState() => _Photos(client);
 }
 
-class _Album extends State<Album> {
+class _Photos extends State<Photos> {
   Client client;
 
-  _Album(this.client);
+  _Photos(this.client);
 
   late List<File> filePath;
   final files = new Map();

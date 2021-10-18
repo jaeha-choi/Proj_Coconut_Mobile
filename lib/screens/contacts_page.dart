@@ -91,7 +91,7 @@ class _Contacts extends State<Contacts> {
     List<Person> contact = [Person('Robin Seo', 'pubKey')];
     double padding = 10;
     final sidePadding =
-    EdgeInsets.symmetric(horizontal: padding, vertical: padding);
+        EdgeInsets.symmetric(horizontal: padding, vertical: padding);
     return SafeArea(
         child: Scaffold(
             body: Container(

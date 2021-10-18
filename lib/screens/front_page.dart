@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../client.dart';
 import 'contacts_page.dart';
-import 'file_page.dart';
+import 'files_page.dart';
 import 'photos_page.dart';
 
 class FrontPage extends StatefulWidget {
@@ -69,7 +69,7 @@ class _FrontPageState extends State<FrontPage> {
                       ),
                       BottomNavigationBarItem(
                         icon: const Icon(Icons.folder),
-                        label: 'File',
+                        label: 'Files',
                       )
                     ],
                     currentIndex: _index,
@@ -79,7 +79,7 @@ class _FrontPageState extends State<FrontPage> {
                     index: _index,
                     children: <Widget>[
                       Contacts(client: client),
-                      Album(client: client),
+                      Photos(client: client),
                       SelectFile(client: client),
                     ],
                   ));

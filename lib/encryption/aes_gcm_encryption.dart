@@ -192,6 +192,8 @@ class AesGcmChunk {
   }
 
   /// Decrypts encrypted data from reader and decrypts the file
+  /// Sender's public ket is required for verifying signature
+  /// Receiver's private key is required for decrypting symmetric encryption key
   Future<void> decrypt(StreamIterator streamIterator, RSAPublicKey senderPubKey,
       RSAPrivateKey receiverPrivKey) async {
     // Reads encrypted symmetric encryption key
