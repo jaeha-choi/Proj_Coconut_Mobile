@@ -2,9 +2,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../client.dart';
-import 'album_page.dart';
 import 'contacts_page.dart';
 import 'file_page.dart';
+import 'photos_page.dart';
 
 class FrontPage extends StatefulWidget {
   const FrontPage({Key? key}) : super(key: key);
@@ -65,7 +65,7 @@ class _FrontPageState extends State<FrontPage> {
                       ),
                       BottomNavigationBarItem(
                         icon: const Icon(Icons.photo_album),
-                        label: 'Album',
+                        label: 'Photos',
                       ),
                       BottomNavigationBarItem(
                         icon: const Icon(Icons.folder),

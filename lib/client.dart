@@ -159,7 +159,7 @@ Future<Client> newClient() async {
       File('$appDocPath/key.priv').readAsStringSync());
 
   return new Client(
-    serverIP: "147.182.243.190",
+    serverIP: "127.0.0.1",
     serverPort: 9129,
     // conn: null,
     privKey: privateKey,
