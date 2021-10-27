@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:logger/logger.dart';
 import 'package:mobile_app/client.dart';
 
+import 'commands.dart';
 import 'error.dart';
 
 const int rsaKeySize = 4096;
@@ -91,8 +92,10 @@ Future<Message> readBytes(Stream<Message> stream) async {
   // Wait for the msg
   bool isDataAvailable = await iter.moveNext();
   if (!isDataAvailable) {
-    throw new Exception("no data available from the server");
-    // TODO: Catch Exception
+    // throw new Exception("no data available from the server");
+    // TODO: Catch Exception DONE
+    // what is Error ReceiverNotFound from Error class
+    return Message(0, ReceiverNotFound, Err, Uint8List(0));
   }
   return iter.current;
 }
@@ -132,11 +135,11 @@ int writeBytes(IOSink writer, Uint8List bytes) {
     // Get size(uint32) of total bytes to send
     Uint8List size = uint32ToBytes(bytes.length);
     // Write any error code [uint8] to writer
-    Uint8List code = Uint8List.fromList([NoError.code]);
+    Uint8List errCode = Uint8List.fromList([NoError.code]);
 
     // Write bytes to writer
     // TODO: Add command code
-    writer.add(size + code + bytes);
+    writer.add(size + errCode + bytes);
     // writer.flush();
 
     return 5 + bytes.length;

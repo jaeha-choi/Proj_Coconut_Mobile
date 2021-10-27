@@ -21,6 +21,8 @@ const Error ReceiverNotAvailable = Error("receiver is not available", 8);
 const Error NoAvailableAddCodeError = Error("no available add code error", 9);
 const Error ExistingConnError =
     Error("existing connection present in client struct", 10);
+const Error WritingMsgError = Error("can't write data to writer", 11);
+const Error GeneralClientError = Error("general client error", 12);
 
 const List<Error> errorsList = [
   NoError,
@@ -33,5 +35,7 @@ const List<Error> errorsList = [
   ReceiverNotFound,
   ReceiverNotAvailable,
   NoAvailableAddCodeError,
-  ExistingConnError
+  ExistingConnError,
+  WritingMsgError,
+  GeneralClientError
 ];

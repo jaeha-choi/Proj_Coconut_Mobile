@@ -66,7 +66,7 @@ class Client {
 
   /// Connects to the server
   /// Returns true if connected to the server, false otherwise.
-  Future<void> connect() async {
+  Future<Error> connect() async {
     try {
       logger.i('Connecting....');
       this.conn = await SecureSocket.connect(
@@ -86,16 +86,18 @@ class Client {
           'Connected to ${this.conn.remoteAddress.address}:${this.conn.remotePort}');
     } catch (e) {
       logger.e('Error in connect() :$e');
-      // TODO: Error handling
+      // TODO: Error handling DONE
+      return ExistingConnError;
     }
 
     // Initializing client
-    await doInit();
+    return await doInit();
   }
 
-  /// Send initialization code to the server
+  /// Send initialization code [pubKeyHash] to the server
   Future<Error> doInit() async {
     final Command comm = Init;
+    // Creates map of command
     this.mapOfChannel[comm.string] = StreamController<Message>();
     Uint8List pubKeyHash = pemToSha256(this.pubKeyBlock);
     // Send pubKeyHash to the server
@@ -103,7 +105,8 @@ class Client {
       logger.d("Error in doInit()");
       // Remove channel if error is encountered
       this.mapOfChannel.remove(comm.string);
-      // TODO: Return write error
+      // TODO: Return write error DONE
+      return WritingMsgError;
     }
     return await getResult(comm.string);
   }
@@ -116,9 +119,12 @@ class Client {
   }
 
   /// Remove Add Code
+  /// It removes AddCode from server, if it success return [Error] NoError
+  /// otherwise return [Error] UnknownError
   Future<Error> doRemoveAddCode() async {
     final Command comm = RemoveAddCode;
     try {
+      // Creates a map to store incoming data
       this.mapOfChannel[comm.string] = StreamController<Message>();
       // Send the remove add code command
       if (writeString(this.conn, comm.string) == -1) {
@@ -136,8 +142,8 @@ class Client {
     } catch (e) {
       logger.e("Error in doRemoveAddCode: $e");
       this.mapOfChannel.remove(comm.string);
-      // TODO: Return GeneralClientError instead
-      return UnknownCodeError;
+      // TODO: Return GeneralClientError instead DONE
+      return GeneralClientError;
     }
   }
 
@@ -155,8 +161,8 @@ class Client {
     } catch (e) {
       logger.e("Error in doGetAddCode: $e");
       this.mapOfChannel.remove(comm.string);
-      // TODO: Return GeneralClientError instead
-      return UnknownCodeError;
+      // TODO: Return GeneralClientError instead DONE
+      return GeneralClientError;
     }
   }
 

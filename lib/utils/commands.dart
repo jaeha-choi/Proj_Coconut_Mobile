@@ -16,7 +16,8 @@ const Command RemoveAddCode = Command("RADC", 3);
 const Command GetAddCode = Command("GADC", 4);
 const Command EndRelay = Command("ERLY", 5);
 const Command RequestRelay = Command("RELY", 6);
-const Command Quit = Command("QUIT", 7);
+const Command Err = Command("ERR", 7);
+const Command Quit = Command("QUIT", 8);
 
 const List<Command> commandsList = [
   Init,
@@ -26,5 +27,6 @@ const List<Command> commandsList = [
   GetAddCode,
   EndRelay,
   RequestRelay,
+  Err,
   Quit
 ];
