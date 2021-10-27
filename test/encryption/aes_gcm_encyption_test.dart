@@ -37,8 +37,8 @@ class ByteStream implements IOSink {
 
 Future<void> main() async {
   Logger.level = Level.debug;
-  Client? client1 = await newClient();
-  Client? client2 = await newClient();
+  Client client1 = await newClient();
+  Client client2 = await newClient();
   AesGcmChunk encrypt = encryptSetup("./testdata/short_txt.txt");
   AesGcmChunk decrypt = decryptSetup();
   ByteStream test = ByteStream();
@@ -49,12 +49,13 @@ Future<void> main() async {
 
   await encrypt.encrypt(
       test,
-      CryptoUtils.rsaPublicKeyFromPemPkcs1(client1!.pubKeyBlock),
-      client2!.privKey);
+      CryptoUtils.rsaPublicKeyFromPemPkcs1(client1.pubKeyBlock),
+      client2.privKey);
 
   StreamIterator<Uint8List> testIter =
       StreamIterator(Stream.fromIterable(test.list));
 
+  // TODO: Update parameter type and format
   await decrypt.decrypt(
       testIter,
       CryptoUtils.rsaPublicKeyFromPemPkcs1(client2.pubKeyBlock),

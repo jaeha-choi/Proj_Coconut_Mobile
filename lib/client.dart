@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:core';
 import 'dart:io';
 import 'dart:typed_data';
@@ -29,6 +30,15 @@ final logger = Logger(
       printTime: false),
 );
 
+class Message {
+  final int size;
+  final Error errorCode;
+  final Command command;
+  final Uint8List data;
+
+  const Message(this.size, this.errorCode, this.command, this.data);
+}
+
 class Client {
   String serverIP;
   int serverPort;
@@ -36,9 +46,7 @@ class Client {
   RSAPrivateKey privKey;
   String pubKeyBlock;
   String addCode;
-
-  // late StreamIterator connDataIterator;
-  Map<String, StreamController<Uint8List>> mapOfChannel;
+  Map<String, StreamController<Message>> mapOfChannel;
 
   Client({
     required String serverIP,
@@ -47,8 +55,7 @@ class Client {
     required RSAPrivateKey privKey,
     required String pubKey,
     required String addCode,
-    required Map<String, StreamController<Uint8List>> mapOfChannel,
-    // StreamSubscription? stream,
+    required Map<String, StreamController<Message>> mapOfChannel,
   })  : this.serverIP = serverIP,
         this.serverPort = serverPort,
         // this.conn = conn,
@@ -56,8 +63,6 @@ class Client {
         this.pubKeyBlock = pubKey,
         this.addCode = addCode,
         this.mapOfChannel = mapOfChannel;
-
-// this.stream = stream;
 
   /// Connects to the server
   /// Returns true if connected to the server, false otherwise.
@@ -67,10 +72,9 @@ class Client {
       this.conn = await SecureSocket.connect(
         this.serverIP,
         this.serverPort,
-        onBadCertificate: (certificate) => true,
+        onBadCertificate: (certificate) =>
+            true, // TODO: Change once dev. is done
       );
-
-      // this.connDataIterator = StreamIterator(this.conn);
 
       // Add listen method
       this.conn.listen((Uint8List data) {
@@ -82,104 +86,117 @@ class Client {
           'Connected to ${this.conn.remoteAddress.address}:${this.conn.remotePort}');
     } catch (e) {
       logger.e('Error in connect() :$e');
+      // TODO: Error handling
     }
+
     // Initializing client
     await doInit();
-
-    // return await doInit();
   }
 
   /// Send initialization code to the server
   Future<Error> doInit() async {
-    this.mapOfChannel['INIT'] = StreamController<Uint8List>();
+    final Command comm = Init;
+    this.mapOfChannel[comm.string] = StreamController<Message>();
     Uint8List pubKeyHash = pemToSha256(this.pubKeyBlock);
     // Send pubKeyHash to the server
     if (writeBytes(this.conn, pubKeyHash) == -1) {
       logger.d("Error in doInit()");
+      // Remove channel if error is encountered
+      this.mapOfChannel.remove(comm.string);
+      // TODO: Return write error
     }
-    return await getResult('INIT');
+    return await getResult(comm.string);
   }
 
   /// Returns error code from the server
   Future<Error> getResult(String command) async {
-    Message msg =
-        await readBytes(StreamIterator(this.mapOfChannel[command]!.stream));
-    // Message msg = await readBytes2(StreamIterator(this.listOfChannel['ER']));
-    // msg.data;
+    Message msg = await readBytes(this.mapOfChannel[command]!.stream);
+    this.mapOfChannel.remove(command);
     return msg.errorCode;
   }
 
   /// Remove Add Code
-  Future<void> doRemoveAddCode() async {
+  Future<Error> doRemoveAddCode() async {
+    final Command comm = RemoveAddCode;
     try {
+      this.mapOfChannel[comm.string] = StreamController<Message>();
       // Send the remove add code command
-      int err = writeString(this.conn, command(RemoveAddCode));
-      if (err == -1) {
+      if (writeString(this.conn, comm.string) == -1) {
         logger.d("Error while sending command(Remove Add Code) to the server");
       }
       // send the add code that you want to erase
-      int err2 = writeString(this.conn, this.addCode);
-      if (err2 == -1) {
+      if (writeString(this.conn, this.addCode) == -1) {
         logger.d("Error while sending free add code to the server");
       }
 
       // Erase add code front client
-      this.addCode = '';
+      this.addCode = "";
 
-      // await getResult();
+      return await getResult(comm.string);
     } catch (e) {
       logger.e("Error in doRemoveAddCode: $e");
+      this.mapOfChannel.remove(comm.string);
+      // TODO: Return GeneralClientError instead
+      return UnknownCodeError;
     }
   }
 
   /// Sends command(Get Add Code)
-  Future<void> doGetAddCode() async {
+  Future<Error> doGetAddCode() async {
+    final Command comm = GetAddCode;
     // Send the command to the server
     try {
-      // creates BytesBuilder to store
-      // Stream addCodeBuffer = ;
-      // addCodeBuffer to client.listOfChannel
-      // this.listOfChannel['AC'] = addCodeBuffer;
-      writeString(this.conn, GetAddCode);
-      logger.i("writeString command (DoGetcode()) is done");
-      // Future check to see if addCodeBuffer is finished
-
+      if (writeString(this.conn, comm.string) == -1) {
+        logger.d("Error while sending command(get Add Code) to the server");
+      }
+      Message msg = await readBytes(this.mapOfChannel[comm]!.stream);
+      this.addCode = utf8.decode(msg.data);
+      return await getResult(comm.string);
     } catch (e) {
       logger.e("Error in doGetAddCode: $e");
-      // return false;
+      this.mapOfChannel.remove(comm.string);
+      // TODO: Return GeneralClientError instead
+      return UnknownCodeError;
     }
   }
 
   /// Command Handler gets called Right after connect to the server
   /// Command Handler will write data to [client.mapOfChannel]
-  Future<void> commandHandler(Uint8List data) async {
-    // Add code
-    print(data);
-    print("yo");
-    if (data[0] == 0) {
-      // TODO Change [StreamController<Uint8List>] change it to Stream?
-      // initialize StreamController<Uint8List> inside of feature method
-      Error err = await getResult('ER');
-      print(err.errorCode);
+  void commandHandler(Uint8List inputData) {
+    int size = -1;
+    int errorCode = UnknownCodeError.code;
+    int commandCode = inputData[5];
+    Uint8List data = Uint8List(0);
+
+    size = bytesToUint32(inputData);
+    errorCode = inputData[4];
+    if (errorCode != 0) {
+      // if errorCode is not in Error class, then return unknown Error
+      if (!errorsList.asMap().containsKey(errorCode)) {
+        errorCode = UnknownCodeError.code;
+      }
     }
 
-    // if ( == 'GADC') {
-    //   // Creates ByteBuilder
-    //   await this.doGetAddCode(eachCommand.command);
-    //   // Add data to client.listOfChannel
-    //   Message msg = await readBytes(this.connDataIterator);
-    //   print(utf8.decode(msg.data));
-    //   this.listOfChannel['AC'] = msg.data;
-    //   // print(listOfChannel);
-    //   this.addCode = utf8.decode(this.listOfChannel['AC'].takeByte());
-    // }
+    // If the packets can be trimmed before received, check if the size of
+    // received data matches the size of the original msg
+    if (size != 0) {
+      data = inputData.sublist(6);
+    }
+
+    Message msg =
+        Message(size, errorsList[errorCode], commandsList[commandCode], data);
+
+    this.mapOfChannel[commandsList[commandCode].string]!.add(msg);
+  }
+
+  Future<void> close() async {
+    await this.conn.close();
   }
 }
 
 /// Creates new [Client] and return it.
 /// Returns null upon error.
 Future<Client> newClient() async {
-  // try {
   // Open RSA keys, if the user already got one
   Directory appDocDir = await getApplicationDocumentsDirectory();
   String appDocPath = appDocDir.path;
@@ -204,40 +221,12 @@ Future<Client> newClient() async {
     privKey: privateKey,
     pubKey: pubKey,
     addCode: "",
-    mapOfChannel: new Map<String, StreamController<Uint8List>>(),
-
-    // stream: null,
+    mapOfChannel: new Map<String, StreamController<Message>>(),
   );
-}
-// catch (e) {
-//   logger.e('Error in newClient() $e');
-// }
-// return null;
-
-Future<Client> createClient() async {
-  Client client = await newClient();
-  if (client == null) {
-    //     TODO: Error handling
-    print("Client is null");
-  }
-  await client.connect();
-  // var connDataIterator = StreamIterator(client.listOfChannel['ER']);
-  // print(connDataIterator.current);
-
-  // diff thread
-  // commandHandler(client, eachCommand)
-  //    TODO need to change list of command
-  // await client.doGetAddCode( );
-  return client;
 }
 
 Future<void> main() async {
   Logger.level = Level.debug;
-  Client? client = await newClient();
-  if (client == null) {
-    // TODO: Error handling
-    return;
-  }
+  Client client = await newClient();
   await client.connect();
-  // client.doGetAddCode(client);
 }

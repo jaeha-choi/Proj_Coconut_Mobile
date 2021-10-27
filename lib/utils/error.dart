@@ -1,62 +1,37 @@
-import 'dart:typed_data';
-
-import 'package:mobile_app/utils/util.dart';
-
 class Error {
-  String error;
-  Uint8List errorCode;
+  final String string;
+  final int code;
 
-  Error({
-    required error,
-    required errorCode,
-  })  : error = error,
-        errorCode = errorCode;
+  const Error(this.string, this.code);
+
+  String toString() {
+    return this.string;
+  }
 }
 
-Error noError =
-    Error(error: 'no error', errorCode: convertIntByte(0, Endian.big, 1));
-Error unKnownCodeError = Error(
-    error: 'unknown error code returned',
-    errorCode: convertIntByte(1, Endian.big, 1));
-Error unKnownCommandError = Error(
-    error: 'unknown command returned',
-    errorCode: convertIntByte(2, Endian.big, 1));
-Error generalServerError = Error(
-    error: 'general server error', errorCode: convertIntByte(3, Endian.big, 1));
-Error taskNotCompleteError = Error(
-    error: 'task not complete', errorCode: convertIntByte(4, Endian.big, 1));
-Error pubKeyMismatchError = Error(
-    error: 'public key mismatch', errorCode: convertIntByte(5, Endian.big, 1));
-Error clientNotFoundError = Error(
-    error: 'client not found error',
-    errorCode: convertIntByte(6, Endian.big, 1));
-Error receiverNotFound = Error(
-    error: 'receiver is not available',
-    errorCode: convertIntByte(7, Endian.big, 1));
-Error receiverNotAvailable = Error(
-    error: 'receiver is not available',
-    errorCode: convertIntByte(8, Endian.big, 1));
-Error noAvailableAddCodeError = Error(
-    error: 'no available add code error',
-    errorCode: convertIntByte(9, Endian.big, 1));
-Error existingConnError = Error(
-    error: 'existing connection present in client struct',
-    errorCode: convertIntByte(10, Endian.big, 1));
+const Error NoError = Error("no error", 0);
+const Error UnknownCodeError = Error("unknown error code returned", 1);
+const Error UnknownCommandError = Error("unknown command returned", 2);
+const Error GeneralServerError = Error("general server error", 3);
+const Error TaskNotCompleteError = Error("task not complete", 4);
+const Error PubKeyMismatchError = Error("public key mismatch", 5);
+const Error ClientNotFoundError = Error("client not found error", 6);
+const Error ReceiverNotFound = Error("receiver was not found", 7);
+const Error ReceiverNotAvailable = Error("receiver is not available", 8);
+const Error NoAvailableAddCodeError = Error("no available add code error", 9);
+const Error ExistingConnError =
+    Error("existing connection present in client struct", 10);
 
-var error = [
-  noError,
-  unKnownCodeError,
-  unKnownCommandError,
-  generalServerError,
-  taskNotCompleteError,
-  pubKeyMismatchError,
-  clientNotFoundError,
-  receiverNotFound,
-  receiverNotAvailable,
-  noAvailableAddCodeError,
-  existingConnError
+const List<Error> errorsList = [
+  NoError,
+  UnknownCodeError,
+  UnknownCommandError,
+  GeneralServerError,
+  TaskNotCompleteError,
+  PubKeyMismatchError,
+  ClientNotFoundError,
+  ReceiverNotFound,
+  ReceiverNotAvailable,
+  NoAvailableAddCodeError,
+  ExistingConnError
 ];
-
-void main() {
-  print(error.length);
-}

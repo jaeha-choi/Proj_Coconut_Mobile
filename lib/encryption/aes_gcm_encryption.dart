@@ -6,6 +6,7 @@ import 'dart:typed_data';
 
 import 'package:basic_utils/basic_utils.dart';
 import 'package:logger/logger.dart';
+import 'package:mobile_app/client.dart';
 import 'package:mobile_app/encryption/rsa.dart';
 import 'package:path/path.dart' as p;
 import "package:pointycastle/export.dart";
@@ -194,16 +195,16 @@ class AesGcmChunk {
   /// Decrypts encrypted data from reader and decrypts the file
   /// Sender's public ket is required for verifying signature
   /// Receiver's private key is required for decrypting symmetric encryption key
-  Future<void> decrypt(StreamIterator streamIterator, RSAPublicKey senderPubKey,
+  Future<void> decrypt(Stream<Message> steam, RSAPublicKey senderPubKey,
       RSAPrivateKey receiverPrivKey) async {
     // Reads encrypted symmetric encryption key
-    Message dataEncryptedMsg = await readBytes(streamIterator);
+    Message dataEncryptedMsg = await readBytes(steam);
     Uint8List dataEncrypted = dataEncryptedMsg.data;
     if (dataEncrypted == Uint8List(0)) {
       logger.d("Error in readBytes while getting dataEncrypted");
     }
     // Reads signature for encrypted symmetric encryption key
-    Message dataSignatureMsg = await readBytes(streamIterator);
+    Message dataSignatureMsg = await readBytes(steam);
     Uint8List dataSignature = dataSignatureMsg.data;
     if (dataSignature == Uint8List(0)) {
       logger.d("Error in readBytes while getting dataEncrypted");
@@ -217,14 +218,14 @@ class AesGcmChunk {
         bytesToUint16(Uint8List.fromList(dataPlain.skip(SymKeySize).toList()));
 
     // Get IV for decrypting file name
-    Message ivFileNameMsg = await readBytes(streamIterator);
+    Message ivFileNameMsg = await readBytes(steam);
     Uint8List ivFileName = ivFileNameMsg.data;
     if (ivFileName == Uint8List(0)) {
       logger.d("Error while reading iv for file name");
     }
 
     // Get encrypted file name
-    Message encryptedFileNameMsg = await readBytes(streamIterator);
+    Message encryptedFileNameMsg = await readBytes(steam);
     Uint8List encryptedFileName = encryptedFileNameMsg.data;
     if (encryptedFileName == Uint8List(0)) {
       logger.d("Error while reading encrypted file name");
@@ -246,7 +247,7 @@ class AesGcmChunk {
     // this.readOffset and this.readChunkNum are updated in encryptedChunk
     while (this._chunkNum < this._chunkCount) {
       // read IV in plain text
-      Message ivMsg = await readBytes(streamIterator);
+      Message ivMsg = await readBytes(steam);
 
       Uint8List iv = ivMsg.data;
       if (iv == Uint8List(0)) {
@@ -254,7 +255,7 @@ class AesGcmChunk {
       }
 
       // Read encrypted file chunk + current chunk number (first two bytes)
-      Message encryptedFileChunkMsg = await readBytes(streamIterator);
+      Message encryptedFileChunkMsg = await readBytes(steam);
       Uint8List encryptedFileChunk = encryptedFileChunkMsg.data;
       if (encryptedFileChunk == Uint8List(0)) {
         logger.d("Error in readBytes while reading encryptedFileChunk");

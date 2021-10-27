@@ -4,25 +4,14 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:logger/logger.dart';
+import 'package:mobile_app/client.dart';
 
 import 'error.dart';
 
 const int rsaKeySize = 4096;
 const int bufferSize = 4096;
 
-class Message {
-  int size;
-  Error errorCode;
-  Uint8List data;
 
-  Message({
-    required int size,
-    required Error errorCode,
-    required Uint8List data,
-  })  : size = size,
-        errorCode = errorCode,
-        data = data;
-}
 
 var logger = Logger(
   printer: PrettyPrinter(
@@ -97,39 +86,15 @@ Uint8List uint32ToBytes(int value) =>
 //   return filePath;
 // }
 
-Future<Message> readBytes(StreamIterator streamIterator) async {
-  int size = -1;
-  int errorCode = unKnownCodeError.errorCode[0];
-  Uint8List data = Uint8List(0);
-
-  try {
-    // Wait for the size + error code
-    bool isDataAvailable = await streamIterator.moveNext();
-    if (!isDataAvailable) {
-      throw new Exception("no data available from the server");
-    }
-    Uint8List sizeErrorCode = streamIterator.current;
-    size = bytesToUint32(sizeErrorCode);
-    errorCode = sizeErrorCode[4];
-    if (errorCode != 0) {
-      // if errorCode is not in Error class, then return unknown Error
-      if (!error.asMap().containsKey(errorCode)) {
-        errorCode = unKnownCodeError.errorCode[0];
-      }
-    }
-
-    // If the packets can be trimmed before received, check if the size of
-    // received data matches the size of the original msg
-    if (size != 0) {
-      isDataAvailable = await streamIterator.moveNext();
-      if (!isDataAvailable) {
-        throw new Exception("no data available from the server");
-      }
-    }
-  } catch (e) {
-    logger.e("Error in readBytes2: $e");
+Future<Message> readBytes(Stream<Message> stream) async {
+  StreamIterator<Message> iter = StreamIterator<Message>(stream);
+  // Wait for the msg
+  bool isDataAvailable = await iter.moveNext();
+  if (!isDataAvailable) {
+    throw new Exception("no data available from the server");
+    // TODO: Catch Exception
   }
-  return Message(size: size, errorCode: error[errorCode], data: data);
+  return iter.current;
 }
 
 // writeBinary opens file and write byte data to writer
@@ -156,16 +121,7 @@ int writeString(IOSink writer, String msg) {
     logger.e("msg cannot be empty");
     return -1;
   }
-  try {
-    Uint8List bytes = Uint8List.fromList(utf8.encode(msg));
-    if (bytes == null) {
-      throw Exception("bytes cannot be null");
-    }
-    return writeBytes(writer, bytes);
-  } catch (e) {
-    logger.e("Error in writeString(): $e");
-  }
-  return -1;
+  return writeBytes(writer, Uint8List.fromList(utf8.encode(msg)));
 }
 
 /// WriteString writes message to writer
@@ -174,31 +130,18 @@ int writeString(IOSink writer, String msg) {
 int writeBytes(IOSink writer, Uint8List bytes) {
   try {
     // Get size(uint32) of total bytes to send
-    var size = uint32ToBytes(bytes.length);
-
+    Uint8List size = uint32ToBytes(bytes.length);
     // Write any error code [uint8] to writer
-    Uint8List code = noError.errorCode;
-    // TODO: Double check + operator works as intended
-    // print(size+ code);
-    writer.add(size + code);
+    Uint8List code = Uint8List.fromList([NoError.code]);
 
     // Write bytes to writer
-    writer.add(bytes);
+    // TODO: Add command code
+    writer.add(size + code + bytes);
     // writer.flush();
 
     return 5 + bytes.length;
   } catch (error) {
     logger.e('Error in writeString() :$error');
     return -1;
-  }
-}
-
-@deprecated
-void connects_to_socket() async {
-  try {
-    RawSocket socket = await RawSocket.connect('143.198.234.58', 1234);
-    print(socket);
-  } on SocketException catch (e) {
-    print(e);
   }
 }
