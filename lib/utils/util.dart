@@ -125,10 +125,9 @@ Future<Message> readBytes(StreamIterator streamIterator) async {
       if (!isDataAvailable) {
         throw new Exception("no data available from the server");
       }
-      data = streamIterator.current;
     }
   } catch (e) {
-    logger.e("Error in readBytes: $e");
+    logger.e("Error in readBytes2: $e");
   }
   return Message(size: size, errorCode: error[errorCode], data: data);
 }

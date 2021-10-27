@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../client.dart';
 import '../utils/contact_class.dart';
-
 enum ButtonState { init, loading, done }
 
 class Contacts extends StatefulWidget {
@@ -31,7 +30,7 @@ class _Contacts extends State<Contacts> {
     bool isOnLine = state == ButtonState.init;
 
     // var contacts = new Map();
-    String addCode = client.addCode;
+    // String addCode = client.addCode;
 
     bool shouldDisplay = false;
 
@@ -42,7 +41,7 @@ class _Contacts extends State<Contacts> {
 
     void changeText() {
       setState(() {
-        addCode = addCode;
+        client.addCode = client.addCode;
       });
     }
 
@@ -50,7 +49,7 @@ class _Contacts extends State<Contacts> {
         onPressed: () async {
           setState(() => state = ButtonState.loading);
           await Future.delayed(Duration(seconds: 2));
-          await client.doGetAddCode(client);
+          // await client.doGetAddCode(client);
           changeStatus();
           setState(() => state = ButtonState.init);
         },
@@ -65,7 +64,7 @@ class _Contacts extends State<Contacts> {
 
     Widget buildOnline() => ElevatedButton(
         onPressed: () async {
-          await client.doRemoveAddCode(client);
+          await client.doRemoveAddCode();
           setState(() => state = ButtonState.loading);
           await Future.delayed(Duration(seconds: 2));
           changeStatus();
@@ -227,13 +226,15 @@ class _Contacts extends State<Contacts> {
                                   onPressed: () async {
                                     if (isOnLine && !notReceiving) {
                                       notReceiving = false;
-                                      await client.doRemoveAddCode(client);
-                                      await client.doGetAddCode(client);
+                                      await client.doRemoveAddCode();
+                                      await client.doGetAddCode();
+
+                                      // await client.doGetAddCode(client);
                                       changeText();
                                     }
                                     if (isOnLine && notReceiving) {
                                       notReceiving = false;
-                                      await client.doGetAddCode(client);
+                                      await client.doGetAddCode();
                                       changeText();
                                     }
                                   },
@@ -252,7 +253,7 @@ class _Contacts extends State<Contacts> {
                                         !notReceiving &&
                                         client.addCode.length == 6) {
                                       notReceiving = true;
-                                      await client.doRemoveAddCode(client);
+                                      await client.doRemoveAddCode();
                                       changeText();
                                     }
                                   },
@@ -274,6 +275,7 @@ class _Contacts extends State<Contacts> {
                                         horizontal: 50, vertical: 10)),
                                 Text(
                                   client.addCode,
+                                  // utf8.decode(client.listOfChannel['AR']?.takeBytes()),
                                   style: TextStyle(
                                       fontSize: 40,
                                       fontWeight: FontWeight.bold),
