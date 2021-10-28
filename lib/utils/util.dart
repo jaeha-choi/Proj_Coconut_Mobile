@@ -87,8 +87,7 @@ Uint8List uint32ToBytes(int value) =>
 //   return filePath;
 // }
 
-Future<Message> readBytes(Stream<Message> stream) async {
-  StreamIterator<Message> iter = StreamIterator<Message>(stream);
+Future<Message> readBytes(StreamIterator<Message> iter) async {
   // Wait for the msg
   bool isDataAvailable = await iter.moveNext();
   if (!isDataAvailable) {
@@ -139,10 +138,11 @@ int writeBytes(IOSink writer, Uint8List bytes) {
 
     // Write bytes to writer
     // TODO: Add command code
-    writer.add(size + errCode + bytes);
+    Uint8List commandCode = Uint8List(1);
+    writer.add(size + errCode + commandCode + bytes);
     // writer.flush();
 
-    return 5 + bytes.length;
+    return 6 + bytes.length;
   } catch (error) {
     logger.e('Error in writeString() :$error');
     return -1;

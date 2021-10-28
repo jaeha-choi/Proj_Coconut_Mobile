@@ -99,6 +99,8 @@ class Client {
     final Command comm = Init;
     // Creates map of command
     this.mapOfChannel[comm.string] = StreamController<Message>();
+    final StreamIterator<Message> iter =
+        StreamIterator<Message>(this.mapOfChannel[comm.string]!.stream);
     Uint8List pubKeyHash = pemToSha256(this.pubKeyBlock);
     // Send pubKeyHash to the server
     if (writeBytes(this.conn, pubKeyHash) == -1) {
@@ -108,12 +110,12 @@ class Client {
       // TODO: Return write error DONE
       return WritingMsgError;
     }
-    return await getResult(comm.string);
+    return await getResult(comm.string, iter);
   }
 
   /// Returns error code from the server
-  Future<Error> getResult(String command) async {
-    Message msg = await readBytes(this.mapOfChannel[command]!.stream);
+  Future<Error> getResult(String command, StreamIterator<Message> iter) async {
+    Message msg = await readBytes(iter);
     this.mapOfChannel.remove(command);
     return msg.errorCode;
   }
@@ -126,6 +128,8 @@ class Client {
     try {
       // Creates a map to store incoming data
       this.mapOfChannel[comm.string] = StreamController<Message>();
+      final StreamIterator<Message> iter =
+          StreamIterator<Message>(this.mapOfChannel[comm.string]!.stream);
       // Send the remove add code command
       if (writeString(this.conn, comm.string) == -1) {
         logger.d("Error while sending command(Remove Add Code) to the server");
@@ -138,7 +142,7 @@ class Client {
       // Erase add code front client
       this.addCode = "";
 
-      return await getResult(comm.string);
+      return await getResult(comm.string, iter);
     } catch (e) {
       logger.e("Error in doRemoveAddCode: $e");
       this.mapOfChannel.remove(comm.string);
@@ -150,14 +154,17 @@ class Client {
   /// Sends command(Get Add Code)
   Future<Error> doGetAddCode() async {
     final Command comm = GetAddCode;
+    this.mapOfChannel[comm.string] = StreamController<Message>();
+    final StreamIterator<Message> iter =
+        StreamIterator<Message>(this.mapOfChannel[comm.string]!.stream);
     // Send the command to the server
     try {
       if (writeString(this.conn, comm.string) == -1) {
         logger.d("Error while sending command(get Add Code) to the server");
       }
-      Message msg = await readBytes(this.mapOfChannel[comm]!.stream);
+      Message msg = await readBytes(iter);
       this.addCode = utf8.decode(msg.data);
-      return await getResult(comm.string);
+      return await getResult(comm.string, iter);
     } catch (e) {
       logger.e("Error in doGetAddCode: $e");
       this.mapOfChannel.remove(comm.string);

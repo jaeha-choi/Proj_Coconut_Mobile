@@ -197,8 +197,9 @@ class AesGcmChunk {
   /// Receiver's private key is required for decrypting symmetric encryption key
   Future<void> decrypt(Stream<Message> stream, RSAPublicKey senderPubKey,
       RSAPrivateKey receiverPrivKey) async {
+    StreamIterator<Message> iter = StreamIterator<Message>(stream);
     // Reads encrypted symmetric encryption key
-    Message dataEncryptedMsg = await readBytes(stream);
+    Message dataEncryptedMsg = await readBytes(iter);
     Uint8List dataEncrypted = dataEncryptedMsg.data;
     if (dataEncrypted == Uint8List(0)) {
       logger.d("Error in readBytes while getting dataEncrypted");
@@ -206,7 +207,7 @@ class AesGcmChunk {
     // TODO i think i need to iterate stream here
 
     // Reads signature for encrypted symmetric encryption key
-    Message dataSignatureMsg = await readBytes(stream);
+    Message dataSignatureMsg = await readBytes(iter);
     Uint8List dataSignature = dataSignatureMsg.data;
     if (dataSignature == Uint8List(0)) {
       logger.d("Error in readBytes while getting dataEncrypted");
@@ -220,14 +221,14 @@ class AesGcmChunk {
         bytesToUint16(Uint8List.fromList(dataPlain.skip(SymKeySize).toList()));
 
     // Get IV for decrypting file name
-    Message ivFileNameMsg = await readBytes(stream);
+    Message ivFileNameMsg = await readBytes(iter);
     Uint8List ivFileName = ivFileNameMsg.data;
     if (ivFileName == Uint8List(0)) {
       logger.d("Error while reading iv for file name");
     }
 
     // Get encrypted file name
-    Message encryptedFileNameMsg = await readBytes(stream);
+    Message encryptedFileNameMsg = await readBytes(iter);
     Uint8List encryptedFileName = encryptedFileNameMsg.data;
     if (encryptedFileName == Uint8List(0)) {
       logger.d("Error while reading encrypted file name");
@@ -249,7 +250,7 @@ class AesGcmChunk {
     // this.readOffset and this.readChunkNum are updated in encryptedChunk
     while (this._chunkNum < this._chunkCount) {
       // read IV in plain text
-      Message ivMsg = await readBytes(stream);
+      Message ivMsg = await readBytes(iter);
 
       Uint8List iv = ivMsg.data;
       if (iv == Uint8List(0)) {
@@ -257,7 +258,7 @@ class AesGcmChunk {
       }
 
       // Read encrypted file chunk + current chunk number (first two bytes)
-      Message encryptedFileChunkMsg = await readBytes(stream);
+      Message encryptedFileChunkMsg = await readBytes(iter);
       Uint8List encryptedFileChunk = encryptedFileChunkMsg.data;
       if (encryptedFileChunk == Uint8List(0)) {
         logger.d("Error in readBytes while reading encryptedFileChunk");
@@ -270,7 +271,7 @@ class AesGcmChunk {
       decryptFileChunk = _decryptChunk(encryptData);
 
       // Write decrypted data to temp file
-      (this._stream as IOSink).write(utf8.decode(decryptFileChunk));
+      (this._stream as IOSink).add(decryptFileChunk);
       // await this.file.writeAsBytes(decryptFileChunk, mode: FileMode.append);
     }
     this.close();
