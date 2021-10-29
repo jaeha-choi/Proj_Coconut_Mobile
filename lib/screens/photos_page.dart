@@ -1,9 +1,13 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-
+import 'package:mobile_app/utils/contact_class.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'contacts_page.dart';
 import '../client.dart';
+import 'package:mobile_app/screens/contacts_page.dart';
 
 class Photos extends StatefulWidget {
   Client client;
@@ -24,6 +28,7 @@ class _Photos extends State<Photos> {
   late List<File> filePath;
   final files = new Map();
 
+
   Widget build(BuildContext context) {
     int itemCount;
 
@@ -35,40 +40,74 @@ class _Photos extends State<Photos> {
 
     return Scaffold(
         body: Stack(
-      children: <Widget>[
-        ListView.builder(
-            itemCount: itemCount,
-            itemBuilder: (context, index) {
-              return Padding(
-                  padding: const EdgeInsets.symmetric(
-                      vertical: 1.0, horizontal: 1.0),
-                  child: Card(
-                    child: ListTile(
-                      onTap: () {},
-                      title: Text(files.keys.toList()[index]),
-                    ),
-                  ));
-            }),
-        Padding(
-            padding:
+          children: <Widget>[
+            ListView.builder(
+                itemCount: itemCount,
+                itemBuilder: (context, index) {
+                  return Padding(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 1.0, horizontal: 1.0),
+                      child: Card(
+                        child: ListTile(
+                          onTap: () {},
+                          title: Text(files.keys.toList()[index]),
+                        ),
+                      ));
+                }),
+            Padding(
+                padding:
                 const EdgeInsets.symmetric(vertical: 40.0, horizontal: 1.0),
-            child: Align(
-                alignment: Alignment.bottomCenter,
-                child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      ElevatedButton(
-                        child: Text('Select Files',
-                            style: TextStyle(fontSize: 24)),
-                        onPressed: getImage,
-                      ),
-                      ElevatedButton(
-                        child: Text('Send', style: TextStyle(fontSize: 24)),
-                        onPressed: () {},
-                      ),
-                    ])))
-      ],
-    ));
+                child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          ElevatedButton(
+                            child: Text('Select Files',
+                                style: TextStyle(fontSize: 24)),
+                            onPressed: getImage,
+                          ),
+                          ElevatedButton(
+                            child: Text('Send', style: TextStyle(fontSize: 24)),
+                            onPressed: () async {
+                              final prefs = await SharedPreferences
+                                  .getInstance();
+                              List<String> spList = prefs.getStringList(
+                                  'list')!;
+                              List<User> friendsList =
+                              spList.map((item) =>
+                                  User.fromMap(json.decode(item))).toList();
+                              print(spList);
+                              showDialog(context: context,
+                                  builder: (BuildContext context) =>
+                                      AlertDialog(
+                                        title: const Text("Contact List"),
+                                        content: SingleChildScrollView(
+                                          child: ListBody(
+                                            children: <Widget>[
+                                              // TODO need to create Contact List
+                                              ListView.builder(itemBuilder:)
+                                              // ListView.builder(
+                                              //   itemCount : friendsList.length,
+                                              //   itemBuilder: (BuildContext context, int index) {
+                                              //   return Container(
+                                              //     child: Center(child: Text(friendsList[index].fullName),)
+                                              //   );
+                                              // })
+
+                                            ],
+                                          ),
+                                        ),
+                                      )
+                              );
+
+                              // print(friendsList);
+
+                            },
+                          ),
+                        ])))
+          ],
+        ));
   }
 
   Future getImage() async {

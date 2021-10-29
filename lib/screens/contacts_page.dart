@@ -38,43 +38,19 @@ class _Contacts extends State<Contacts> {
     // final prefs = await SharedPreferences.getInstance();
   }
 
-  initSharedPreferences() async {
-    sharedPreferences = await SharedPreferences.getInstance();
-    loadData();
-  }
-
-  // void saveData() {
-  //   List<String> stringList =
-  //       friendsList.map((item) => json.encode(item.toMap())).toList();
-  //   sharedPreferences.setStringList('list', stringList);
-  //   print(stringList);
-  // }
-  void addUser(User item) {
-    friendsList.add(item);
-    saveData();
-  }
-
-  void saveData() {
-    List<String> spList =
-        friendsList.map((item) => json.encode(item.toMap())).toList();
-    sharedPreferences.setStringList("list", spList);
-    print(spList);
-  }
-
-  void loadData() {
-    List<String> spList = sharedPreferences.getStringList('list')!;
-    friendsList =
-        spList.map((item) => User.fromMap(json.decode(item))).toList();
-    setState(() {});
+  Widget buildListView() {
+    return ListView.builder(
+      itemCount: friendsList.length,
+      itemBuilder: (BuildContext context, int index) {
+        return buildItem(friendsList[index], index);
+      },
+    );
   }
 
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
     bool isDone = state == ButtonState.done;
     bool isOnLine = state == ButtonState.init;
-
-    // var contacts = new Map();
-    // String addCode = client.addCode;
 
     bool shouldDisplay = false;
 
@@ -246,30 +222,30 @@ class _Contacts extends State<Contacts> {
                         Padding(padding: sidePadding),
                       ],
                     ),
-                    Expanded(
-                      // height: 600,
-                      // width: 400,
-                        child: ListView.builder(
-                      padding: const EdgeInsets.all(8),
-                      itemCount: friendsList.length,
-                      itemBuilder: (BuildContext context, int index) {
-                        // print(itemCount);
-
-                        // if (itemCount == 0) return HeaderTile();
-                        return UsersTile(friendsList[index]);
-                      },
-                      //       shrinkWrap: true,
-                      //       itemCount: itemCount,
-                      //       itemBuilder: (BuildContext context, int index) {
-                      //      return ListTile(
-                      //         //TODO need to implement delete file from file list
-                      //
-                      //           title: Text(contacts.keys.toList()[index]));
-                      // },
-                    )),
+                    Expanded(child: buildListView()),
+                    // height: 600,
+                    // width: 400,
+                    //     child: ListView.builder(
+                    //   padding: const EdgeInsets.all(8),
+                    //   itemCount: friendsList.length,
+                    //   itemBuilder: (BuildContext context, int index) {
+                    //     // print(itemCount);
+                    //
+                    //     // if (itemCount == 0) return HeaderTile();
+                    //     return UsersTile(friendsList[index]);
+                    //   },
+                    //   //       shrinkWrap: true,
+                    //   //       itemCount: itemCount,
+                    //   //       itemBuilder: (BuildContext context, int index) {
+                    //   //      return ListTile(
+                    //   //         //TODO need to implement delete file from file list
+                    //   //
+                    //   //           title: Text(contacts.keys.toList()[index]));
+                    //   // },
+                    // )),
                     Container(
-                      // margin:  const EdgeInsets.all(15.0),
-                      // padding: const EdgeInsets.all(3.0),
+                        // margin:  const EdgeInsets.all(15.0),
+                        // padding: const EdgeInsets.all(3.0),
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.white),
                         ),
@@ -350,5 +326,68 @@ class _Contacts extends State<Contacts> {
                         ]))
                   ],
                 ))));
+  }
+
+  Widget buildItem(User item, index) {
+    return Dismissible(
+      key: Key('${item.hashCode}'),
+      background: Container(color: Colors.red[700]),
+      onDismissed: (DismissDirection endToStart) => removeItem(item),
+      direction: DismissDirection.endToStart,
+      child: buildListTile(item, index),
+    );
+  }
+
+  Widget buildListTile(User item, int index) {
+    // print(item.completed);
+    return ListTile(
+      // onTap: () => changeItemCompleteness(item),
+      onLongPress: () => send(),
+      title: Text(
+        item.fullName,
+        key: Key('item-$index'),
+        style: TextStyle(),
+      ),
+      subtitle: Text(item.pubKey.toString().substring(0, 5)),
+    );
+    // trailing: Icon(item.completed
+    //     ? Icons.check_box
+    //     : Icons.check_box_outline_blank,
+    //   key: Key('completed-icon-$index'),
+    // ),
+    // );
+  }
+
+  void send() {
+    // AesGcmChunk encrypt = encryptSetup();
+  }
+
+  void removeItem(User item) {
+    friendsList.remove(item);
+    saveData();
+  }
+
+  initSharedPreferences() async {
+    sharedPreferences = await SharedPreferences.getInstance();
+    loadData();
+  }
+
+  void addUser(User item) {
+    friendsList.add(item);
+    saveData();
+  }
+
+  void saveData() {
+    List<String> spList =
+        friendsList.map((item) => json.encode(item.toMap())).toList();
+    sharedPreferences.setStringList("list", spList);
+    print(spList);
+  }
+
+  void loadData() {
+    List<String> spList = sharedPreferences.getStringList('list')!;
+    friendsList =
+        spList.map((item) => User.fromMap(json.decode(item))).toList();
+    setState(() {});
   }
 }
