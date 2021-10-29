@@ -204,7 +204,6 @@ class AesGcmChunk {
     if (dataEncrypted == Uint8List(0)) {
       logger.d("Error in readBytes while getting dataEncrypted");
     }
-    // TODO i think i need to iterate stream here
 
     // Reads signature for encrypted symmetric encryption key
     Message dataSignatureMsg = await readBytes(iter);

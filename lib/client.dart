@@ -7,8 +7,10 @@ import 'dart:typed_data';
 import 'package:basic_utils/basic_utils.dart';
 import 'package:logger/logger.dart';
 import 'package:mobile_app/encryption/rsa.dart';
+import 'package:mobile_app/utils/contact_class.dart';
 import 'package:mobile_app/utils/util.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'utils/commands.dart';
 import 'utils/error.dart';
@@ -64,8 +66,12 @@ class Client {
         this.addCode = addCode,
         this.mapOfChannel = mapOfChannel;
 
+  late SharedPreferences sharedPreferences;
+
+  List<User> friendsList = <User>[];
+
   /// Connects to the server
-  /// Returns true if connected to the server, false otherwise.
+  /// Returns [Error] ExistingConnError if there is error in connection
   Future<Error> connect() async {
     try {
       logger.i('Connecting....');
@@ -95,6 +101,7 @@ class Client {
   }
 
   /// Send initialization code [pubKeyHash] to the server
+  /// TODO send private IP address to the server??
   Future<Error> doInit() async {
     final Command comm = Init;
     // Creates map of command
@@ -114,6 +121,7 @@ class Client {
   }
 
   /// Returns error code from the server
+  /// getResults get called every feature calls to check potential error
   Future<Error> getResult(String command, StreamIterator<Message> iter) async {
     Message msg = await readBytes(iter);
     this.mapOfChannel.remove(command);
@@ -152,6 +160,7 @@ class Client {
   }
 
   /// Sends command(Get Add Code)
+  /// Returns [Error] GeneralClientError if there is no Add code available
   Future<Error> doGetAddCode() async {
     final Command comm = GetAddCode;
     this.mapOfChannel[comm.string] = StreamController<Message>();
@@ -168,8 +177,37 @@ class Client {
     } catch (e) {
       logger.e("Error in doGetAddCode: $e");
       this.mapOfChannel.remove(comm.string);
-      // TODO: Return GeneralClientError instead DONE
+      // TODO: Return GeneralClientError instead DONE but shouldn't this be noAvailableAddCodeError?
       return GeneralClientError;
+    }
+  }
+
+  /// Sends the recipient's AddCode to the server to receive recipient's pubKey.
+  /// If it is successful, it saves recipient information locally using _save()
+  /// Returns [Error] clientNotFoundError if no client found
+  Future<List> doRequestPubKey(String recipientAddCode, String fullName) async {
+    final Command comm = GetPubKey;
+    // Creates map to store data from the server
+    this.mapOfChannel[comm.toString()] = StreamController<Message>();
+    final StreamIterator<Message> iter =
+        StreamIterator<Message>(this.mapOfChannel[comm.string]!.stream);
+    // Send the command to the server
+    try {
+      if (writeString(this.conn, RequestRelay.toString()) == -1) {
+        logger
+            .d("Error while sending command(request public key) to the server");
+      }
+      if (writeString(this.conn, recipientAddCode) == -1) {
+        logger.d("Error while sending recipient AddCode to the server");
+      }
+      Message msg = await readBytes(iter);
+      String pubKeyString = utf8.decode(msg.data);
+      // _save(fullName, pubKeyString);
+      return [await getResult(comm.string, iter), pubKeyString];
+    } catch (e) {
+      logger.e("Error in doRequestPubKey: $e");
+      this.mapOfChannel.remove(comm.string);
+      return [ClientNotFoundError, ''];
     }
   }
 
@@ -189,16 +227,13 @@ class Client {
         errorCode = UnknownCodeError.code;
       }
     }
-
     // If the packets can be trimmed before received, check if the size of
     // received data matches the size of the original msg
     if (size != 0) {
       data = inputData.sublist(6);
     }
-
     Message msg =
         Message(size, errorsList[errorCode], commandsList[commandCode], data);
-
     this.mapOfChannel[commandsList[commandCode].string]!.add(msg);
   }
 

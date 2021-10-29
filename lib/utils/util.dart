@@ -148,3 +148,4 @@ int writeBytes(IOSink writer, Uint8List bytes) {
     return -1;
   }
 }
+

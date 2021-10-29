@@ -29,7 +29,7 @@ class _FrontPageState extends State<FrontPage> {
     if (!this.init) {
       this.client = await newClient();
       await this.client.connect();
-      // await this.client.doGetAddCode( );
+      await this.client.doGetAddCode();
       this.init = true;
     }
   }

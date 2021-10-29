@@ -34,6 +34,8 @@ dependencies:
   basic_utils: ^3.6.0
   logger: ^1.1.0
   path: ^1.8.0
+  json_annotation: ^4.3.0
+  shared_preferences: ^2.0.8
 
 dev_dependencies:
   flutter_test:

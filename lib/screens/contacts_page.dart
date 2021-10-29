@@ -1,7 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../client.dart';
 import '../utils/contact_class.dart';
+
 enum ButtonState { init, loading, done }
 
 class Contacts extends StatefulWidget {
@@ -10,19 +14,59 @@ class Contacts extends StatefulWidget {
   Contacts({required this.client});
 
   // Contacts
-
   @override
   _Contacts createState() => _Contacts(client);
 }
 
 class _Contacts extends State<Contacts> {
   ButtonState state = ButtonState.init;
+  final fullName = TextEditingController();
+  final addCode = TextEditingController();
 
   Client client;
 
   _Contacts(this.client);
 
   bool notReceiving = false;
+  List<User> friendsList = <User>[];
+  late SharedPreferences sharedPreferences;
+
+  @override
+  void initState() {
+    initSharedPreferences();
+    super.initState();
+    // final prefs = await SharedPreferences.getInstance();
+  }
+
+  initSharedPreferences() async {
+    sharedPreferences = await SharedPreferences.getInstance();
+    loadData();
+  }
+
+  // void saveData() {
+  //   List<String> stringList =
+  //       friendsList.map((item) => json.encode(item.toMap())).toList();
+  //   sharedPreferences.setStringList('list', stringList);
+  //   print(stringList);
+  // }
+  void addUser(User item) {
+    friendsList.add(item);
+    saveData();
+  }
+
+  void saveData() {
+    List<String> spList =
+        friendsList.map((item) => json.encode(item.toMap())).toList();
+    sharedPreferences.setStringList("list", spList);
+    print(spList);
+  }
+
+  void loadData() {
+    List<String> spList = sharedPreferences.getStringList('list')!;
+    friendsList =
+        spList.map((item) => User.fromMap(json.decode(item))).toList();
+    setState(() {});
+  }
 
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
@@ -87,10 +131,9 @@ class _Contacts extends State<Contacts> {
     }
 
     // int index = 0;
-    List<Person> contact = [Person('Robin Seo', 'pubKey')];
     double padding = 10;
     final sidePadding =
-        EdgeInsets.symmetric(horizontal: padding, vertical: padding);
+    EdgeInsets.symmetric(horizontal: padding, vertical: padding);
     return SafeArea(
         child: Scaffold(
             body: Container(
@@ -99,7 +142,7 @@ class _Contacts extends State<Contacts> {
                   children: <Widget>[
                     Padding(padding: sidePadding),
                     Row(
-                        // mainAxisAlignment: MainAxisAlignment.start,
+                      // mainAxisAlignment: MainAxisAlignment.start,
                         children: [
                           Padding(padding: sidePadding),
                           Text(
@@ -111,7 +154,7 @@ class _Contacts extends State<Contacts> {
                           Spacer(),
                           Container(
                               child:
-                                  isOnLine ? buildOnline() : loading(isDone)),
+                              isOnLine ? buildOnline() : loading(isDone)),
                           Padding(padding: sidePadding),
                         ]),
                     Row(
@@ -146,12 +189,14 @@ class _Contacts extends State<Contacts> {
                                   children: <Widget>[
                                     Padding(padding: sidePadding),
                                     TextField(
+                                      controller: fullName,
                                       decoration: const InputDecoration(
                                           border: OutlineInputBorder(),
                                           hintText: 'Enter a full name'),
                                     ),
                                     Padding(padding: sidePadding),
                                     TextField(
+                                      controller: addCode,
                                       decoration: const InputDecoration(
                                           border: OutlineInputBorder(),
                                           hintText: 'Enter an addCode'),
@@ -170,7 +215,24 @@ class _Contacts extends State<Contacts> {
                                   ),
                                 ),
                                 TextButton(
-                                  onPressed: () => Navigator.pop(context, 'OK'),
+                                  onPressed: () async {
+                                    // .code == 0 means the server found recipient's add code
+                                    // List requestPubKey = await client.doRequestPubKey(
+                                    //         addCode.text, fullName.text);
+                                    // if (requestPubKey.first.code == 0) {
+                                    addUser(User(
+                                        fullName: fullName.text,
+                                        pubKey: 'eraseme'));
+                                    // pubKey: requestPubKey.last));
+                                    Navigator.pop(context, 'OK');
+                                    setState(() {});
+                                    // }
+                                    // addToContact();
+                                  },
+                                  // }
+                                  // TODO run doRequestPubKey
+                                  // =>
+
                                   child: const Text('OK'),
                                   style: TextButton.styleFrom(
                                     side: BorderSide(
@@ -185,14 +247,16 @@ class _Contacts extends State<Contacts> {
                       ],
                     ),
                     Expanded(
-                        // height: 600,
-                        // width: 400,
+                      // height: 600,
+                      // width: 400,
                         child: ListView.builder(
                       padding: const EdgeInsets.all(8),
-                      itemCount: contact.length,
+                      itemCount: friendsList.length,
                       itemBuilder: (BuildContext context, int index) {
-                        if (index == 0) return HeaderTile();
-                        return PersonTile(contact[index - 1]);
+                        // print(itemCount);
+
+                        // if (itemCount == 0) return HeaderTile();
+                        return UsersTile(friendsList[index]);
                       },
                       //       shrinkWrap: true,
                       //       itemCount: itemCount,
@@ -204,8 +268,8 @@ class _Contacts extends State<Contacts> {
                       // },
                     )),
                     Container(
-                        // margin:  const EdgeInsets.all(15.0),
-                        // padding: const EdgeInsets.all(3.0),
+                      // margin:  const EdgeInsets.all(15.0),
+                      // padding: const EdgeInsets.all(3.0),
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.white),
                         ),
