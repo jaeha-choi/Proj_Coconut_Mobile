@@ -193,16 +193,19 @@ class _Contacts extends State<Contacts> {
                                 TextButton(
                                   onPressed: () async {
                                     // .code == 0 means the server found recipient's add code
-                                    // List requestPubKey = await client.doRequestPubKey(
-                                    //         addCode.text, fullName.text);
-                                    // if (requestPubKey.first.code == 0) {
-                                    addUser(User(
-                                        fullName: fullName.text,
-                                        pubKey: 'eraseme'));
-                                    // pubKey: requestPubKey.last));
-                                    Navigator.pop(context, 'OK');
-                                    setState(() {});
-                                    // }
+                                    List requestPubKey =
+                                        await client.doRequestPubKey(
+                                            addCode.text, fullName.text);
+                                    if (requestPubKey.first.code == 0) {
+                                      addUser(User(
+                                          fullName: fullName.text,
+                                          pubKey: requestPubKey.last));
+                                      Navigator.pop(context, 'OK');
+                                      setState(() {});
+                                    } else {
+                                      Navigator.pop(context, 'OK');
+                                    }
+
                                     // addToContact();
                                   },
                                   // }

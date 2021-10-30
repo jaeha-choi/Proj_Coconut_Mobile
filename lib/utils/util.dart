@@ -33,7 +33,7 @@ var logger = Logger(
 /// ----Conversions----
 
 /// Convert integer to byte
-Uint8List? convertIntByte(value, Endian order, int bytesSize) {
+Uint8List? convertIntToByte(value, Endian order, int bytesSize) {
   try {
     final kMaxBytes = 8;
     var bytes = Uint8List(kMaxBytes)
@@ -92,9 +92,8 @@ Future<Message> readBytes(StreamIterator<Message> iter) async {
   bool isDataAvailable = await iter.moveNext();
   if (!isDataAvailable) {
     // throw new Exception("no data available from the server");
-    // TODO: Catch Exception DONE
     // what is Error ReceiverNotFound from Error class
-    return Message(0, ReceiverNotFound, Err, Uint8List(0));
+    return Message(0, GeneralClientError, Init, Uint8List(0));
   }
   return iter.current;
 }
@@ -118,27 +117,29 @@ Future<List> writeBinary(RawSocket conn, File file) async {
   return [sizeInByte, true];
 }
 
-int writeString(IOSink writer, String msg) {
+int writeString(IOSink writer, String msg, Command command, Error error) {
+  // Chang command to Uint8Lsit
   if (msg.isEmpty) {
     logger.e("msg cannot be empty");
     return -1;
   }
-  return writeBytes(writer, Uint8List.fromList(utf8.encode(msg)));
+  return writeBytes(
+      writer, Uint8List.fromList(utf8.encode(msg)), command, error);
 }
 
 /// WriteString writes message to writer
 /// length of message cannot exceed BufferSize
 /// returns length of total bytes sent. Return -1 on error.
-int writeBytes(IOSink writer, Uint8List bytes) {
+int writeBytes(IOSink writer, Uint8List bytes, Command command, Error error) {
   try {
     // Get size(uint32) of total bytes to send
     Uint8List size = uint32ToBytes(bytes.length);
     // Write any error code [uint8] to writer
-    Uint8List errCode = Uint8List.fromList([NoError.code]);
+    Uint8List errCode = Uint8List.fromList([error.code]);
+    // Get Command and change it to Uint8List
+    Uint8List commandCode = convertIntToByte(command.code, Endian.big, 1)!;
 
     // Write bytes to writer
-    // TODO: Add command code
-    Uint8List commandCode = Uint8List(1);
     writer.add(size + errCode + commandCode + bytes);
     // writer.flush();
 
@@ -149,3 +150,7 @@ int writeBytes(IOSink writer, Uint8List bytes) {
   }
 }
 
+void main() {
+  int s = 2;
+  print(convertIntToByte(s, Endian.big, 1));
+}

@@ -8,6 +8,8 @@ import 'package:basic_utils/basic_utils.dart';
 import 'package:logger/logger.dart';
 import 'package:mobile_app/client.dart';
 import 'package:mobile_app/encryption/rsa.dart';
+import 'package:mobile_app/utils/commands.dart';
+import 'package:mobile_app/utils/error.dart';
 import 'package:path/path.dart' as p;
 import "package:pointycastle/export.dart";
 
@@ -106,16 +108,18 @@ class AesGcmChunk {
 
     // Send encrypted symmetric key
     try {
-      writeBytes(writer, encryptSignData.first);
+      writeBytes(writer, encryptSignData.first, FileCommand, NoError);
     } catch (e) {
       logger.d("Error in writeBytes while sending data encrypted");
+      // return
     }
 
     // Send encrypted symmetric key signature
     try {
-      writeBytes(writer, encryptSignData.last);
+      writeBytes(writer, encryptSignData.last, FileCommand, NoError);
     } catch (e) {
       logger.d("Error in writeBytes while sending data signature");
+      // return
     }
 
     // Only send file name, not a path
@@ -126,10 +130,10 @@ class AesGcmChunk {
         _encryptBytes(Uint8List.fromList(utf8.encode(newPath)));
 
     // Send IV (Nonce)
-    writeBytes(writer, encryptedData.iv);
+    writeBytes(writer, encryptedData.iv, FileCommand, NoError);
 
     // Send encrypted file name
-    writeBytes(writer, encryptedData.encryptedData);
+    writeBytes(writer, encryptedData.encryptedData, FileCommand, NoError);
 
     // Send encrypted file
     // List encryptedFileChunk;
@@ -146,10 +150,11 @@ class AesGcmChunk {
         encryptedFileChunk = await _encryptChunk(chunkSize);
       }
       // send IV in plain text
-      writeBytes(writer, encryptedFileChunk.iv);
+      writeBytes(writer, encryptedFileChunk.iv, FileCommand, NoError);
 
       // Send encrypted file chunk + current chunk number (first two bytes)
-      writeBytes(writer, encryptedFileChunk.encryptedData);
+      writeBytes(
+          writer, encryptedFileChunk.encryptedData, FileCommand, NoError);
     }
     this.close();
   }

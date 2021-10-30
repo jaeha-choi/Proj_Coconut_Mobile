@@ -5,9 +5,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_app/utils/contact_class.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'contacts_page.dart';
+
 import '../client.dart';
-import 'package:mobile_app/screens/contacts_page.dart';
 
 class Photos extends StatefulWidget {
   Client client;
@@ -27,7 +26,6 @@ class _Photos extends State<Photos> {
 
   late List<File> filePath;
   final files = new Map();
-
 
   Widget build(BuildContext context) {
     int itemCount;
@@ -86,9 +84,9 @@ class _Photos extends State<Photos> {
                                           child: ListBody(
                                             children: <Widget>[
                                               // TODO need to create Contact List
-                                              ListView.builder(itemBuilder:)
-                                              // ListView.builder(
-                                              //   itemCount : friendsList.length,
+                                          // ListView.builder(itemBuilder:)
+                                          // ListView.builder(
+                                          //   itemCount : friendsList.length,
                                               //   itemBuilder: (BuildContext context, int index) {
                                               //   return Container(
                                               //     child: Center(child: Text(friendsList[index].fullName),)

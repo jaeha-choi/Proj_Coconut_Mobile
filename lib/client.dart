@@ -92,7 +92,6 @@ class Client {
           'Connected to ${this.conn.remoteAddress.address}:${this.conn.remotePort}');
     } catch (e) {
       logger.e('Error in connect() :$e');
-      // TODO: Error handling DONE
       return ExistingConnError;
     }
 
@@ -101,20 +100,29 @@ class Client {
   }
 
   /// Send initialization code [pubKeyHash] to the server
-  /// TODO send private IP address to the server??
   Future<Error> doInit() async {
     final Command comm = Init;
     // Creates map of command
     this.mapOfChannel[comm.string] = StreamController<Message>();
+
     final StreamIterator<Message> iter =
         StreamIterator<Message>(this.mapOfChannel[comm.string]!.stream);
     Uint8List pubKeyHash = pemToSha256(this.pubKeyBlock);
     // Send pubKeyHash to the server
-    if (writeBytes(this.conn, pubKeyHash) == -1) {
+    if (writeBytes(this.conn, pubKeyHash, comm, NoError) == -1) {
       logger.d("Error in doInit()");
       // Remove channel if error is encountered
       this.mapOfChannel.remove(comm.string);
-      // TODO: Return write error DONE
+      return WritingMsgError;
+    }
+    // Send local address
+    var temp = await NetworkInterface.list();
+    // Currently, we're just assuming the first element to have the
+    // correct local ip address
+    String ipPort = temp[0].addresses[0].address + ":${this.conn.port}";
+    if (writeString(this.conn, ipPort, comm, NoError) == -1) {
+      logger.d("Error in doInit()");
+      this.mapOfChannel.remove(comm.string);
       return WritingMsgError;
     }
     return await getResult(comm.string, iter);
@@ -139,11 +147,11 @@ class Client {
       final StreamIterator<Message> iter =
           StreamIterator<Message>(this.mapOfChannel[comm.string]!.stream);
       // Send the remove add code command
-      if (writeString(this.conn, comm.string) == -1) {
+      if (writeString(this.conn, comm.string, comm, NoError) == -1) {
         logger.d("Error while sending command(Remove Add Code) to the server");
       }
       // send the add code that you want to erase
-      if (writeString(this.conn, this.addCode) == -1) {
+      if (writeString(this.conn, this.addCode, comm, NoError) == -1) {
         logger.d("Error while sending free add code to the server");
       }
 
@@ -154,7 +162,6 @@ class Client {
     } catch (e) {
       logger.e("Error in doRemoveAddCode: $e");
       this.mapOfChannel.remove(comm.string);
-      // TODO: Return GeneralClientError instead DONE
       return GeneralClientError;
     }
   }
@@ -168,16 +175,20 @@ class Client {
         StreamIterator<Message>(this.mapOfChannel[comm.string]!.stream);
     // Send the command to the server
     try {
-      if (writeString(this.conn, comm.string) == -1) {
+      if (writeString(this.conn, comm.string, comm, NoError) == -1) {
         logger.d("Error while sending command(get Add Code) to the server");
       }
       Message msg = await readBytes(iter);
+      // Error checking. Do check every Message
+      if (msg.errorCode.code != 0) {
+        return msg.errorCode;
+      }
       this.addCode = utf8.decode(msg.data);
       return await getResult(comm.string, iter);
     } catch (e) {
+      // General error checking
       logger.e("Error in doGetAddCode: $e");
       this.mapOfChannel.remove(comm.string);
-      // TODO: Return GeneralClientError instead DONE but shouldn't this be noAvailableAddCodeError?
       return GeneralClientError;
     }
   }
@@ -193,14 +204,18 @@ class Client {
         StreamIterator<Message>(this.mapOfChannel[comm.string]!.stream);
     // Send the command to the server
     try {
-      if (writeString(this.conn, RequestRelay.toString()) == -1) {
+      if (writeBytes(this.conn, Uint8List(0), comm, NoError) == -1) {
         logger
             .d("Error while sending command(request public key) to the server");
       }
-      if (writeString(this.conn, recipientAddCode) == -1) {
+      if (writeString(this.conn, recipientAddCode, comm, NoError) == -1) {
         logger.d("Error while sending recipient AddCode to the server");
       }
       Message msg = await readBytes(iter);
+      // Check error checking
+      if (msg.errorCode.code != 0) {
+        return [ClientNotFoundError, ''];
+      }
       String pubKeyString = utf8.decode(msg.data);
       // _save(fullName, pubKeyString);
       return [await getResult(comm.string, iter), pubKeyString];

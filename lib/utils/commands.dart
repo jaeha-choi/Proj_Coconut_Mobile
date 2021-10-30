@@ -10,23 +10,36 @@ class Command {
 }
 
 const Command Init = Command("INIT", 0);
-const Command RequestPubKey = Command("RPUB", 1);
-const Command GetPubKey = Command("GPUB", 2);
-const Command RemoveAddCode = Command("RADC", 3);
-const Command GetAddCode = Command("GADC", 4);
-const Command EndRelay = Command("ERLY", 5);
-const Command RequestRelay = Command("RELY", 6);
-const Command Err = Command("ERR", 7);
-const Command Quit = Command("QUIT", 8);
+const Command Quit = Command("QUIT", 1);
+
+const Command RequestPubKey = Command("RPUB", 2);
+const Command GetPubKey = Command("GPUB", 3);
+const Command RemoveAddCode = Command("RADC", 4);
+const Command GetAddCode = Command("GADC", 5);
+const Command EndRelay = Command("ERLY", 6);
+const Command RequestRelay = Command("RELY", 7);
+// GetP2PKey get public key for client you want to connect
+const Command GetP2PKey = Command("GKEY", 8);
+// RequestPTP request peer to peer ip address
+const Command RequestPTP = Command("RPTP", 9);
+// HolePunchPING init command for p2p connection
+const Command HolePunchPING = Command("RPTP", 10);
+// HolePunchPONG init reply to "PING" command
+const Command HolePunchPONG = Command("RPTP", 11);
+const Command FileCommand = Command("FILE", 12);
 
 const List<Command> commandsList = [
   Init,
+  Quit,
   RequestPubKey,
   GetPubKey,
   RemoveAddCode,
   GetAddCode,
   EndRelay,
   RequestRelay,
-  Err,
-  Quit
+  GetP2PKey,
+  RequestPTP,
+  HolePunchPING,
+  HolePunchPONG,
+  FileCommand
 ];
