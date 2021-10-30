@@ -53,6 +53,7 @@ void main() {
     RSAPrivateKey client2Pri = client2.privateKey as RSAPrivateKey;
 
     AesGcmChunk encrypt = encryptSetup("./testdata/short_txt.txt");
+
     AesGcmChunk decrypt = decryptSetup();
     ByteStream test = ByteStream();
 

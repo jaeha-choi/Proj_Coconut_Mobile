@@ -103,23 +103,24 @@ class AesGcmChunk {
     keyChNum.add(uint16ToBytes(this._chunkCount));
 
     // Encrypt and sign symmetric encryption key
-    List encryptSignData =
-        encryptSignMsg(keyChNum.takeBytes(), receiverPubKey, senderPrivateKey);
-
+    Uint8List encryptData = encryptMsg(keyChNum.takeBytes(), receiverPubKey);
+    print(encryptData);
     // Send encrypted symmetric key
     try {
-      writeBytes(writer, encryptSignData.first, FileCommand, NoError);
+      writeBytes(writer, encryptData, FileCommand, NoError);
     } catch (e) {
       logger.d("Error in writeBytes while sending data encrypted");
-      // return
     }
 
+    // sign the symmetric encryption key
+    Uint8List dataSignature =
+        CryptoUtils.rsaSign(senderPrivateKey, encryptData);
+    print(dataSignature);
     // Send encrypted symmetric key signature
     try {
-      writeBytes(writer, encryptSignData.last, FileCommand, NoError);
+      writeBytes(writer, dataSignature, FileCommand, NoError);
     } catch (e) {
       logger.d("Error in writeBytes while sending data signature");
-      // return
     }
 
     // Only send file name, not a path
@@ -205,6 +206,7 @@ class AesGcmChunk {
     StreamIterator<Message> iter = StreamIterator<Message>(stream);
     // Reads encrypted symmetric encryption key
     Message dataEncryptedMsg = await readBytes(iter);
+    print(dataEncryptedMsg.data);
     Uint8List dataEncrypted = dataEncryptedMsg.data;
     if (dataEncrypted == Uint8List(0)) {
       logger.d("Error in readBytes while getting dataEncrypted");
@@ -212,6 +214,7 @@ class AesGcmChunk {
 
     // Reads signature for encrypted symmetric encryption key
     Message dataSignatureMsg = await readBytes(iter);
+    print(dataSignatureMsg.data);
     Uint8List dataSignature = dataSignatureMsg.data;
     if (dataSignature == Uint8List(0)) {
       logger.d("Error in readBytes while getting dataEncrypted");

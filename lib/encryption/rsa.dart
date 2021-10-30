@@ -30,15 +30,35 @@ final logger = Logger(
 /// Sign with the [privateKey]
 /// We copied this function from CryptoUtil
 /// https://github.com/Ephenodrom/Dart-Basic-Utils#cryptoutils
-List encryptSignMsg(
-    Uint8List data, RSAPublicKey publicKey, RSAPrivateKey privateKey) {
-  RSAEngine cipher = RSAEngine()
+Uint8List encryptMsg(Uint8List data, RSAPublicKey publicKey) {
+  final cipher = OAEPEncoding(RSAEngine())
     ..init(true, PublicKeyParameter<RSAPublicKey>(publicKey));
-  Uint8List encryptData = cipher.process(data);
+  // return cipher.process(data);
+  return _processInBlocks(cipher, data);
+}
 
-  // sign the symmetric encryption key
-  Uint8List dataSignature = CryptoUtils.rsaSign(privateKey, encryptData);
-  return [encryptData, dataSignature];
+Uint8List _processInBlocks(AsymmetricBlockCipher engine, Uint8List input) {
+  final numBlocks = input.length ~/ engine.inputBlockSize +
+      ((input.length % engine.inputBlockSize != 0) ? 1 : 0);
+
+  final output = Uint8List(numBlocks * engine.outputBlockSize);
+
+  var inputOffset = 0;
+  var outputOffset = 0;
+  while (inputOffset < input.length) {
+    final chunkSize = (inputOffset + engine.inputBlockSize <= input.length)
+        ? engine.inputBlockSize
+        : input.length - inputOffset;
+
+    outputOffset += engine.processBlock(
+        input, inputOffset, chunkSize, output, outputOffset);
+
+    inputOffset += chunkSize;
+  }
+
+  return (output.length == outputOffset)
+      ? output
+      : output.sublist(0, outputOffset);
 }
 
 /// Convert [publicKey] to PEM format string
@@ -104,9 +124,9 @@ Future<void> main() async {
 
   RSAPublicKey pubkey =
       CryptoUtils.rsaPublicKeyFromPemPkcs1(clinet.pubKeyBlock);
-  List encrypt = encryptSignMsg(plain, pubkey, clinet.privKey);
-
-  print(rsaVerify(pubkey, encrypt.first, encrypt.last));
-
-  print(rsaDecrypt(encrypt.first, clinet.privKey));
+  // List encrypt = encryptSignMsg(plain, pubkey, clinet.privKey);
+  //
+  // print(rsaVerify(pubkey, encrypt.first, encrypt.last));
+  //
+  // print(rsaDecrypt(encrypt.first, clinet.privKey));
 }

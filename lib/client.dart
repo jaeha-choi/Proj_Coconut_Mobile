@@ -55,14 +55,15 @@ class Client {
     required int serverPort,
     // SecureSocket? conn,
     required RSAPrivateKey privKey,
-    required String pubKey,
+    required String pubKeyBlock,
     required String addCode,
     required Map<String, StreamController<Message>> mapOfChannel,
-  })  : this.serverIP = serverIP,
+  })
+      : this.serverIP = serverIP,
         this.serverPort = serverPort,
         // this.conn = conn,
         this.privKey = privKey,
-        this.pubKeyBlock = pubKey,
+        this.pubKeyBlock = pubKeyBlock,
         this.addCode = addCode,
         this.mapOfChannel = mapOfChannel;
 
@@ -282,7 +283,7 @@ Future<Client> newClient() async {
     serverPort: 9129,
     // conn: null,
     privKey: privateKey,
-    pubKey: pubKey,
+    pubKeyBlock: pubKey,
     addCode: "",
     mapOfChannel: new Map<String, StreamController<Message>>(),
   );
