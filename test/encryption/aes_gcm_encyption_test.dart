@@ -42,7 +42,6 @@ class ByteStream implements IOSink {
 void main() {
   Logger.level = Level.debug;
   test("encryption and decryption", () async {
-
     final client1 = CryptoUtils.generateRSAKeyPair(keySize: 4096);
     final client2 = CryptoUtils.generateRSAKeyPair(keySize: 4096);
 

@@ -121,8 +121,25 @@ class _Photos extends State<Photos> {
             itemCount: friendsList.length,
             itemBuilder: (BuildContext context, int index) {
               return ListTile(
-                title: Text(friendsList[index].fullName),
-              );
+                  title: Text(friendsList[index].fullName),
+                  onTap: () => showDialog<String>(
+                        context: context,
+                        builder: (BuildContext context) => AlertDialog(
+                          title: Text(
+                              'Are you sure you want to send file to ${friendsList[index].fullName}'),
+                          content: const Text('AlertDialog description'),
+                          actions: <Widget>[
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, 'Cancel'),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, 'OK'),
+                              child: const Text('OK'),
+                            ),
+                          ],
+                        ),
+                      ));
             }));
   }
 
