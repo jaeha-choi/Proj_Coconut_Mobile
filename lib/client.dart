@@ -58,8 +58,7 @@ class Client {
     required String pubKeyBlock,
     required String addCode,
     required Map<String, StreamController<Message>> mapOfChannel,
-  })
-      : this.serverIP = serverIP,
+  })  : this.serverIP = serverIP,
         this.serverPort = serverPort,
         // this.conn = conn,
         this.privKey = privKey,

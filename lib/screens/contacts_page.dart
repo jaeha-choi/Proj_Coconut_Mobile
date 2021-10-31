@@ -109,7 +109,7 @@ class _Contacts extends State<Contacts> {
     // int index = 0;
     double padding = 10;
     final sidePadding =
-    EdgeInsets.symmetric(horizontal: padding, vertical: padding);
+        EdgeInsets.symmetric(horizontal: padding, vertical: padding);
     return SafeArea(
         child: Scaffold(
             body: Container(
@@ -118,7 +118,7 @@ class _Contacts extends State<Contacts> {
                   children: <Widget>[
                     Padding(padding: sidePadding),
                     Row(
-                      // mainAxisAlignment: MainAxisAlignment.start,
+                        // mainAxisAlignment: MainAxisAlignment.start,
                         children: [
                           Padding(padding: sidePadding),
                           Text(
@@ -130,7 +130,7 @@ class _Contacts extends State<Contacts> {
                           Spacer(),
                           Container(
                               child:
-                              isOnLine ? buildOnline() : loading(isDone)),
+                                  isOnLine ? buildOnline() : loading(isDone)),
                           Padding(padding: sidePadding),
                         ]),
                     Row(
@@ -143,8 +143,6 @@ class _Contacts extends State<Contacts> {
                           child: Icon(
                             Icons.person_add,
                             size: 35,
-                            // TODO need to finish implementing
-                            // color: Colors.black,
                           ),
                           style: ElevatedButton.styleFrom(
                             primary: Colors.black54,
@@ -192,10 +190,10 @@ class _Contacts extends State<Contacts> {
                                 ),
                                 TextButton(
                                   onPressed: () async {
-                                    // .code == 0 means the server found recipient's add code
                                     List requestPubKey =
                                         await client.doRequestPubKey(
                                             addCode.text, fullName.text);
+                                    // .code == 0 means the server found recipient's add code
                                     if (requestPubKey.first.code == 0) {
                                       addUser(User(
                                           fullName: fullName.text,
@@ -205,13 +203,8 @@ class _Contacts extends State<Contacts> {
                                     } else {
                                       Navigator.pop(context, 'OK');
                                     }
-
                                     // addToContact();
                                   },
-                                  // }
-                                  // TODO run doRequestPubKey
-                                  // =>
-
                                   child: const Text('OK'),
                                   style: TextButton.styleFrom(
                                     side: BorderSide(
