@@ -105,32 +105,12 @@ Future<List> createPemFile(String appDocPath) async {
 Future<void> writeBinary(IOSink writer, String filename,
     RSAPublicKey receiverPubKey, RSAPrivateKey senderPrivateKey) async {
   AesGcmChunk encrypt = encryptSetup(filename);
-  await encrypt.encrypt(writer, receiverPubKey, senderPrivateKey);
+  await encrypt.encrypt(writer, 'jaehaPub', 'key');
 }
 
-Message readMessage(Uint8List element) {
-  int size = bytesToUint32(element);
-  int errorCode = element[4];
-  int commandCode = element[5];
-  Uint8List data = Uint8List(0);
-  if (errorCode != 0) {
-    // if errorCode is not in Error class, then return unknown Error
-    if (!errorsList.asMap().containsKey(errorCode)) {
-      errorCode = UnknownCodeError.code;
-    }
-  }
-  if (size != 0) {
-    print(data);
-    data = readNBytes(element, size);
-    data = data.sublist(6);
-    // print(data);
-  }
-
-  Message msg =
-      Message(size, errorsList[errorCode], commandsList[commandCode], data);
-
-  return msg;
-}
+// Message readMessage(Uint8List element) {
+//
+// }
 
 Uint8List readNBytes(Uint8List reader, int size) {
   try {
@@ -155,13 +135,12 @@ void main() async {
   String fileName = "./testdata/short_txt.txt";
   ByteStream test = ByteStream();
 
-  // await writeBinary(test, fileName, jaehaPub, robin.privKey);
+  await writeBinary(test, fileName, jaehaPub, robin.privKey);
 
-  // print(robin.pubKeyBlock);
-  // print(test.list);
+  print(test);
 
   // ByteStream test2 = ByteStream();
-  Uint8List data = Uint8List.fromList([
+  Uint8List encryptedData = Uint8List.fromList([
     0,
     0,
     2,
@@ -1297,38 +1276,30 @@ void main() async {
   AesGcmChunk decrypt = decryptSetup();
 
   StreamController<Message> controller = StreamController<Message>();
-  while (data.length != 0) {
-    controller.add(readMessage(data));
-    print('count');
+  while (encryptedData.length != 0) {
+    print(encryptedData.length);
+    int size = bytesToUint32(encryptedData);
+    int errorCode = encryptedData[4];
+    int commandCode = encryptedData[5];
+    Uint8List data = Uint8List(0);
+    if (errorCode != 0) {
+      // if errorCode is not in Error class, then return unknown Error
+      if (!errorsList.asMap().containsKey(errorCode)) {
+        errorCode = UnknownCodeError.code;
+        print('something is wrong');
+      }
+    }
+    if (size != 0) {
+      data = readNBytes(encryptedData, size);
+      encryptedData = encryptedData.sublist(6 + size);
+    }
+    Message msg =
+        Message(size, errorsList[errorCode], commandsList[commandCode], data);
+    controller.add(msg);
   }
 
-  // test2.list.forEach((Uint8List element) {
-  //   int size = bytesToUint32(element);
-  //   print(size);
-  //   int errorCode = element[4];
-  //   // print(errorCode);
-  //   int commandCode = element[5];
-  //   // print(commandCode);
-  //   Uint8List data = Uint8List(0);
-  //   if (errorCode != 0) {
-  //     // if errorCode is not in Error class, then return unknown Error
-  //     if (!errorsList.asMap().containsKey(errorCode)) {
-  //
-  //       errorCode = UnknownCodeError.code;
-  //     }
-  //   }
-  //   if (size != 0) {
-  //     data = element.sublist(6);
-  //     // print(data);
-  //   }
-  //
-  //   Message msg =
-  //   Message(size, errorsList[errorCode], commandsList[commandCode], data);
-  //
-  //   controller.add(msg);
-  // });
+  print('Ready to decrypt');
 
-  print('here');
-
-  await decrypt.decrypt(controller.stream, jaehaPub, robin.privKey);
+  await decrypt.decrypt(
+      controller.stream, './testdata/jaehaPub.pub', './testdata/key');
 }

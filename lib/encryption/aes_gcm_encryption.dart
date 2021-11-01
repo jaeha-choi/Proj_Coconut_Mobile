@@ -218,8 +218,10 @@ class AesGcmChunk {
 
     DecryptVerify dv = DecryptVerify(senderPubKeyN, receiverKeyN);
     int res = dv.getSymKey(dataEncrypted, dataSignature);
+    print(res);
     if (res != 0) {
       // TODO: Error handling
+      print('Error while getting symmetric key');
     }
     this._key = dv.key;
 
