@@ -45,11 +45,7 @@ class _EncryptedData {
   Uint8List encryptedData;
   Uint8List iv;
 
-  _EncryptedData({
-    required encryptedData,
-    required iv,
-  })  : encryptedData = encryptedData,
-        iv = iv;
+  _EncryptedData(this.encryptedData, this.iv);
 }
 
 class AesGcmChunk {
@@ -92,30 +88,19 @@ class AesGcmChunk {
       this._offset,
       this._chunkNum);
 
-  /// Encrypts file and write to writer
-  /// Receiver's pub key is required for encrypting symmetric encryption key
-  /// Sender's private key is required for singing the encrypted key
-  Future<void> encrypt(
-      IOSink writer, String receiverPubKeyN, String senderKeyN) async {
-    // Encrypt and sign symmetric encryption key
-    EncryptSign es = EncryptSign(receiverPubKeyN, senderKeyN);
-    // TODO: get key from outside of this function and create more than 1 key at a time
-    int res = es.createSymKeys(1);
-    if (res < 1) {
-      // TODO: Error handling
-    }
+  /// encrypt encrypts opened file with [symKey], then write the result
+  /// to [writer]. [SymKey] must remain open until the end of this operation.
+  ///
+  /// writer: output to write to (socket, file, etc)
+  /// symKey: SymKey object that contains a symmetric key and encrypted key,
+  /// and a signature.
+  Future<void> encrypt(IOSink writer, SymKey symKey) async {
+    // Send encrypted symmetric key
+    writeBytes(writer, symKey.encryptedKey, FileCommand, NoError);
+    // Send encrypted symmetric key signature
+    writeBytes(writer, symKey.signature, FileCommand, NoError);
 
-    try {
-      // Send encrypted symmetric key
-      writeBytes(writer, es.keys[0].encryptedKey, FileCommand, NoError);
-      // Send encrypted symmetric key signature
-      writeBytes(writer, es.keys[0].signature, FileCommand, NoError);
-    } catch (e) {
-      logger.d("Error in writeBytes while sending data encrypted");
-    }
-
-    // Release memory allocation
-    es.close();
+    this._key = symKey.key;
 
     // Only send file name, not a path
     int lastSeparator = this._filePath.lastIndexOf(Platform.pathSeparator);
@@ -129,13 +114,10 @@ class AesGcmChunk {
 
     // Send IV (Nonce)
     writeBytes(writer, encryptedData.iv, FileCommand, NoError);
-
     // Send encrypted file name
     writeBytes(writer, encryptedData.encryptedData, FileCommand, NoError);
 
     // Send encrypted file
-    // List encryptedFileChunk;
-
     _EncryptedData encryptedFileChunk;
     // Loop until every byte is sent
     // this.readOffset and this.readChunkNum are updated in encryptedChunk
@@ -157,8 +139,9 @@ class AesGcmChunk {
     this.close();
   }
 
-  /// Encrypts portion of the file and return it as []byte with current chunk number
-  /// appended in the beginning (first two bytes). IV is also returned in plain text
+  /// _encryptChunk encrypts portion ("chunk") of the file and return it as
+  /// [_EncryptedData]. Current chunk number is appended in the
+  /// beginning (first two bytes). IV is returned in a plaintext.
   Future<_EncryptedData> _encryptChunk(int chunkSize) async {
     // Read chunk of file to encrypt
     final BytesBuilder plain = BytesBuilder();
@@ -181,7 +164,7 @@ class AesGcmChunk {
     return encryptedData;
   }
 
-  /// Encrypts plain and return encrypted data, IV that was used as [_EncryptedData]
+  /// _encryptBytes encrypts plain and returns [_EncryptedData]
   _EncryptedData _encryptBytes(Uint8List paddedPlaintext) {
     final _seed =
         Uint8List.fromList(List.generate(32, (n) => _random.nextInt(255)));
@@ -191,57 +174,56 @@ class AesGcmChunk {
     final gcm = GCMBlockCipher(AESFastEngine())
       ..init(true,
           AEADParameters(KeyParameter(this._key!), 128, iv, Uint8List(0)));
-
-    return _EncryptedData(encryptedData: gcm.process(paddedPlaintext), iv: iv);
+    return _EncryptedData(gcm.process(paddedPlaintext), iv);
   }
 
-  /// Decrypts encrypted data from reader and decrypts the file
-  /// Sender's public ket is required for verifying signature
-  /// Receiver's private key is required for decrypting symmetric encryption key
+  /// Decrypts encrypted [Message] from [stream] and decrypts the file.
+  /// This function includes decrypting encrypted symmetric key, using
+  /// RSA decryption/verification.
+  ///
+  /// senderPubKeyN: Sender's public key file name. (e.g. /foo/bar/dog.pub)
+  /// receiverKeyN: Receiver's key file name without an extension (e.g. /foo/bar/cat)
+  // TODO: Better error handling + call close() after returning error.
   Future<void> decrypt(
       Stream<Message> stream, String senderPubKeyN, String receiverKeyN) async {
     StreamIterator<Message> iter = StreamIterator<Message>(stream);
 
     // Reads encrypted symmetric encryption key
     Message dataEncryptedMsg = await readBytes(iter);
-    Uint8List dataEncrypted = dataEncryptedMsg.data;
-    if (dataEncrypted == Uint8List(0)) {
+    if (dataEncryptedMsg.data == Uint8List(0)) {
       logger.d("Error in readBytes while getting dataEncrypted");
     }
 
     // Reads signature for encrypted symmetric encryption key
     Message dataSignatureMsg = await readBytes(iter);
-    Uint8List dataSignature = dataSignatureMsg.data;
-    if (dataSignature == Uint8List(0)) {
+    if (dataSignatureMsg.data == Uint8List(0)) {
       logger.d("Error in readBytes while getting dataEncrypted");
     }
 
     DecryptVerify dv = DecryptVerify(senderPubKeyN, receiverKeyN);
-    int res = dv.getSymKey(dataEncrypted, dataSignature);
-    print(res);
+    int res = dv.getSymKey(dataEncryptedMsg.data, dataSignatureMsg.data);
     if (res != 0) {
       // TODO: Error handling
       print('Error while getting symmetric key');
     }
     this._key = dv.key;
 
-    // Get IV for decrypting file name
+    // Get IV for decrypting chunkCount + file name
     Message ivFileNameMsg = await readBytes(iter);
-    Uint8List ivFileName = ivFileNameMsg.data;
-    if (ivFileName == Uint8List(0)) {
+    if (ivFileNameMsg.data == Uint8List(0)) {
       logger.d("Error while reading iv for file name");
     }
 
-    // Get encrypted file name
+    // Get encrypted chunkCount + file name
     Message encryptedFileNameMsg = await readBytes(iter);
-    Uint8List encryptedFileName = encryptedFileNameMsg.data;
+    Uint8List encryptedFileName = Uint8List.fromList(encryptedFileNameMsg.data);
     if (encryptedFileName == Uint8List(0)) {
       logger.d("Error while reading encrypted file name");
     }
 
-    // Decrypt file name with encrypted data and IV
-    Uint8List decryptFileName = _decryptBytes(
-        _EncryptedData(encryptedData: encryptedFileName, iv: ivFileName));
+    // Decrypt chunkCount + file name with encrypted data and IV
+    Uint8List decryptFileName =
+        _decryptBytes(_EncryptedData(encryptedFileName, ivFileNameMsg.data));
     if (decryptFileName == Uint8List(0)) {
       logger.d("Error while decrypting file name");
     }
@@ -257,34 +239,29 @@ class AesGcmChunk {
     while (this._chunkNum < this._chunkCount) {
       // read IV in plain text
       Message ivMsg = await readBytes(iter);
-
-      Uint8List iv = ivMsg.data;
-      if (iv == Uint8List(0)) {
+      if (ivMsg.data == Uint8List(0)) {
         logger.d("Error in readBytes while reading IV");
       }
 
       // Read encrypted file chunk + current chunk number (first two bytes)
       Message encryptedFileChunkMsg = await readBytes(iter);
-      Uint8List encryptedFileChunk = encryptedFileChunkMsg.data;
-      if (encryptedFileChunk == Uint8List(0)) {
+      if (encryptedFileChunkMsg.data == Uint8List(0)) {
         logger.d("Error in readBytes while reading encryptedFileChunk");
       }
 
       // Decrypt file chunk + current chunk number (first two bytes)
-      _EncryptedData encryptData =
-          _EncryptedData(encryptedData: encryptedFileChunk, iv: iv);
-
-      decryptFileChunk = _decryptChunk(encryptData);
+      decryptFileChunk =
+          _decryptChunk(_EncryptedData(encryptedFileChunkMsg.data, ivMsg.data));
 
       // Write decrypted data to temp file
       (this._stream as IOSink).add(decryptFileChunk);
       // await this.file.writeAsBytes(decryptFileChunk, mode: FileMode.append);
     }
-
     dv.close();
     this.close();
   }
 
+  /// _decryptChunk decrypts file chunk
   Uint8List _decryptChunk(_EncryptedData encryptData) {
     // Decrypt data
     Uint8List decryptedData = _decryptBytes(encryptData);
@@ -307,7 +284,7 @@ class AesGcmChunk {
     return decryptedFileChunk;
   }
 
-  /// Decrypts encrypted data with IV and key
+  /// _decryptBytes decrypts encrypted data with IV and key
   Uint8List _decryptBytes(_EncryptedData data) {
     final gcm = GCMBlockCipher(AESFastEngine())
       ..init(false,
@@ -315,6 +292,9 @@ class AesGcmChunk {
     return gcm.process(data.encryptedData);
   }
 
+  /// Close is called automatically at the end of the operation.
+  /// Only call close when an error was encountered and encrypt/decrypt could
+  /// not be finished.
   Future<void> close() async {
     if (!this.isEncrypt) {
       // Write file
@@ -327,34 +307,22 @@ class AesGcmChunk {
   }
 }
 
-/// encryptSetup opens file using[filePath], determine number of chunks, and return
-/// [fileName] is a full path of a file. e.g. /foo/bar/cat.jpg
+/// encryptSetup opens file using [filePath], determine number of chunks,
+/// and return [AesGcmChunk].
+/// [fileName] is a full path of a file. (e.g. /foo/bar/cat.jpg)
 AesGcmChunk encryptSetup(String filename) {
   final File f = File(filename);
   final size = f.lengthSync();
-  return AesGcmChunk._(_genAESSymKey(), f, true, null, filename, size,
-      (size / chunkSize).ceil(), 0, 0);
+  return AesGcmChunk._(
+      null, f, true, null, filename, size, (size / chunkSize).ceil(), 0, 0);
 }
 
-///decryptSetup creates temporary file, make directory if it doesn't exist then return *AesGcmChunk
+/// decryptSetup creates temporary file, makes directory if it doesn't exist,
+/// then return [AesGcmChunk].
 AesGcmChunk decryptSetup() {
   // Concurrent transfer probably requires different file names
   final File f = File(p.join(DownloadPath, "temp.tmp"));
   f.createSync(recursive: true);
   return AesGcmChunk._(
       null, f, false, f.openWrite(mode: FileMode.write), "", 0, 0, 0, 0);
-}
-
-Uint8List _genAESSymKey([int length = 32]) {
-  var values = List<int>.generate(length, (i) => _random.nextInt(256));
-  Uint8List res = Uint8List.fromList(values);
-  // return base64Url.encode(values); ??
-  return res;
-}
-
-Future<void> main() async {
-  // AesGcmChunk encrypter = encryptSetup("./testdata/short_txt.txt");
-  // encrypter.encrypt(writer, encrypter._key, senderPrivateKey)
-  // AesGcmChunk decrtpyer = decryptSetup();
-  // encrypter.encrypt(writer, receiverPubKey, senderPrivateKey);
 }
