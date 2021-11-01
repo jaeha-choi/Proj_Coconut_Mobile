@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:basic_utils/basic_utils.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logger/logger.dart';
 import 'package:mobile_app/client.dart';
 import 'package:mobile_app/encryption/aes_gcm_encryption.dart';
+import 'package:mobile_app/encryption/ffi_rsa.dart';
 import 'package:mobile_app/utils/commands.dart';
 import 'package:mobile_app/utils/error.dart';
 import 'package:mobile_app/utils/util.dart';
@@ -42,52 +42,65 @@ class ByteStream implements IOSink {
 void main() {
   Logger.level = Level.debug;
   test("encryption and decryption", () async {
-
-    final client1 = CryptoUtils.generateRSAKeyPair(keySize: 4096);
-    final client2 = CryptoUtils.generateRSAKeyPair(keySize: 4096);
-
-    RSAPublicKey client1Pub = client1.publicKey as RSAPublicKey;
-    RSAPrivateKey client1Pri = client1.privateKey as RSAPrivateKey;
-
-    RSAPublicKey client2Pub = client2.publicKey as RSAPublicKey;
-    RSAPrivateKey client2Pri = client2.privateKey as RSAPrivateKey;
-
-    AesGcmChunk encrypt = encryptSetup("./testdata/short_txt.txt");
-
-    AesGcmChunk decrypt = decryptSetup();
     ByteStream test = ByteStream();
-
-    // test.add(Uint8List.fromList([0,1,2,3]));
-    // test.add(Uint8List.fromList([3,2,1,0]));
-
-    await encrypt.encrypt(test, client1Pub, client2Pri);
-
     StreamController<Message> controller = StreamController<Message>();
 
-    test.list.forEach((Uint8List element) {
-      int size = bytesToUint32(element);
-      int errorCode = element[4];
-      int commandCode = element[5];
-      Uint8List data = Uint8List(0);
-      if (errorCode != 0) {
-        // if errorCode is not in Error class, then return unknown Error
-        if (!errorsList.asMap().containsKey(errorCode)) {
-          errorCode = UnknownCodeError.code;
-        }
-      }
-      if (size != 0) {
-        data = element.sublist(6);
-      }
+    // ----- Encryption -----
+    // Cat encrypts a file for Fox
+    String cat = "./testdata/keypair1/cat";
+    String fox = "./testdata/keypair2/fox.pub";
 
-      Message msg =
-          Message(size, errorsList[errorCode], commandsList[commandCode], data);
-      controller.add(msg);
+    AesGcmChunk encrypt = encryptSetup("./testdata/short_txt.txt");
+    EncryptSign es = EncryptSign(fox, cat);
+    int res = es.createSymKeys(1);
+    if (res < 1) {
+      // TODO: Error handling
+      print("error");
+    }
+
+    await encrypt.encrypt(test, es.keys[0]);
+    es.close();
+    // ----- Encryption End -----
+
+    // Copy the behavior of listener(commandHandler)
+    test.list.forEach((element) {
+      commHandlerSim(controller, element);
     });
 
-    await decrypt.decrypt(controller.stream, client2Pub, client1Pri);
+    // ----- Decryption -----
+    cat = "./testdata/keypair1/cat.pub";
+    fox = "./testdata/keypair2/fox";
 
-    // TODO: Use checksum to check if the input and the output is the same
+    AesGcmChunk decrypt = decryptSetup();
+    await decrypt.decrypt(controller.stream, cat, fox);
+
     test.close();
     controller.close();
+    // ----- Decryption End -----
+
+    // TODO: Use checksum to check if the input and the output is the same
   });
+}
+
+void commHandlerSim(StreamController<Message> controller, Uint8List element) {
+  // Header
+  int size = bytesToUint32(element);
+  int errorCode = element[4];
+  int commandCode = element[5];
+  Uint8List data = Uint8List(0);
+  // print(element.sublist(0, 6));
+  if (errorCode != 0) {
+    // if errorCode is not in Error class, then return unknown Error
+    if (!errorsList.asMap().containsKey(errorCode)) {
+      errorCode = UnknownCodeError.code;
+    }
+  }
+  if (size != 0) {
+    // Data
+    data = element.sublist(6);
+    // print(data);
+  }
+  Message msg =
+      Message(size, errorsList[errorCode], commandsList[commandCode], data);
+  controller.add(msg);
 }
