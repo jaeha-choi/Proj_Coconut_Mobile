@@ -36,6 +36,7 @@ dependencies:
   path: ^1.8.0
   json_annotation: ^4.3.0
   shared_preferences: ^2.0.8
+  ffi: ^1.1.2
 
 dev_dependencies:
   flutter_test:

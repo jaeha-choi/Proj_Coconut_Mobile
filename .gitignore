@@ -2,6 +2,9 @@
 *.priv
 *.pub
 
+librsa.a
+librsa.h
+
 # Miscellaneous
 *.class
 *.log
