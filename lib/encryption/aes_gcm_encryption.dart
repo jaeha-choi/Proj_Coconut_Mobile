@@ -4,10 +4,9 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:basic_utils/basic_utils.dart';
 import 'package:logger/logger.dart';
 import 'package:mobile_app/client.dart';
-import 'package:mobile_app/encryption/rsa.dart';
+import 'package:mobile_app/encryption/ffi_rsa.dart';
 import 'package:mobile_app/utils/commands.dart';
 import 'package:mobile_app/utils/error.dart';
 import 'package:path/path.dart' as p;
@@ -96,39 +95,37 @@ class AesGcmChunk {
   /// Encrypts file and write to writer
   /// Receiver's pub key is required for encrypting symmetric encryption key
   /// Sender's private key is required for singing the encrypted key
-  Future<void> encrypt(IOSink writer, RSAPublicKey receiverPubKey,
-      RSAPrivateKey senderPrivateKey) async {
-    final BytesBuilder keyChNum = BytesBuilder();
-    keyChNum.add(this._key!);
-    keyChNum.add(uint16ToBytes(this._chunkCount));
-
+  Future<void> encrypt(
+      IOSink writer, String receiverPubKeyN, String senderKeyN) async {
     // Encrypt and sign symmetric encryption key
-    Uint8List encryptData = encryptMsg(keyChNum.takeBytes(), receiverPubKey);
-    print(encryptData);
-    // Send encrypted symmetric key
+    EncryptSign es = EncryptSign(receiverPubKeyN, senderKeyN);
+    // TODO: get key from outside of this function and create more than 1 key at a time
+    int res = es.createSymKeys(1);
+    if (res < 1) {
+      // TODO: Error handling
+    }
+
     try {
-      writeBytes(writer, encryptData, FileCommand, NoError);
+      // Send encrypted symmetric key
+      writeBytes(writer, es.keys[0].encryptedKey, FileCommand, NoError);
+      // Send encrypted symmetric key signature
+      writeBytes(writer, es.keys[0].signature, FileCommand, NoError);
     } catch (e) {
       logger.d("Error in writeBytes while sending data encrypted");
     }
 
-    // sign the symmetric encryption key
-    Uint8List dataSignature =
-        CryptoUtils.rsaSign(senderPrivateKey, encryptData);
-    print(dataSignature);
-    // Send encrypted symmetric key signature
-    try {
-      writeBytes(writer, dataSignature, FileCommand, NoError);
-    } catch (e) {
-      logger.d("Error in writeBytes while sending data signature");
-    }
+    // Release memory allocation
+    es.close();
 
     // Only send file name, not a path
     int lastSeparator = this._filePath.lastIndexOf(Platform.pathSeparator);
     String newPath = this._filePath.substring(lastSeparator + 1);
 
-    _EncryptedData encryptedData =
-        _encryptBytes(Uint8List.fromList(utf8.encode(newPath)));
+    final BytesBuilder keyChNum = BytesBuilder();
+    keyChNum.add(uint16ToBytes(this._chunkCount));
+    keyChNum.add(utf8.encode(newPath));
+
+    _EncryptedData encryptedData = _encryptBytes(keyChNum.takeBytes());
 
     // Send IV (Nonce)
     writeBytes(writer, encryptedData.iv, FileCommand, NoError);
@@ -201,12 +198,12 @@ class AesGcmChunk {
   /// Decrypts encrypted data from reader and decrypts the file
   /// Sender's public ket is required for verifying signature
   /// Receiver's private key is required for decrypting symmetric encryption key
-  Future<void> decrypt(Stream<Message> stream, RSAPublicKey senderPubKey,
-      RSAPrivateKey receiverPrivKey) async {
+  Future<void> decrypt(
+      Stream<Message> stream, String senderPubKeyN, String receiverKeyN) async {
     StreamIterator<Message> iter = StreamIterator<Message>(stream);
+
     // Reads encrypted symmetric encryption key
     Message dataEncryptedMsg = await readBytes(iter);
-    print(dataEncryptedMsg.data);
     Uint8List dataEncrypted = dataEncryptedMsg.data;
     if (dataEncrypted == Uint8List(0)) {
       logger.d("Error in readBytes while getting dataEncrypted");
@@ -214,18 +211,17 @@ class AesGcmChunk {
 
     // Reads signature for encrypted symmetric encryption key
     Message dataSignatureMsg = await readBytes(iter);
-    print(dataSignatureMsg.data);
     Uint8List dataSignature = dataSignatureMsg.data;
     if (dataSignature == Uint8List(0)) {
       logger.d("Error in readBytes while getting dataEncrypted");
     }
-    // verify and decrypts symmetric encryption key
-    Uint8List dataPlain = decryptVerifyMsg(
-        dataEncrypted, dataSignature, senderPubKey, receiverPrivKey);
 
-    this._key = Uint8List.fromList(dataPlain.take(SymKeySize).toList());
-    this._chunkCount =
-        bytesToUint16(Uint8List.fromList(dataPlain.skip(SymKeySize).toList()));
+    DecryptVerify dv = DecryptVerify(senderPubKeyN, receiverKeyN);
+    int res = dv.getSymKey(dataEncrypted, dataSignature);
+    if (res != 0) {
+      // TODO: Error handling
+    }
+    this._key = dv.key;
 
     // Get IV for decrypting file name
     Message ivFileNameMsg = await readBytes(iter);
@@ -249,7 +245,8 @@ class AesGcmChunk {
     }
 
     // Update file name
-    this._filePath = utf8.decode(decryptFileName);
+    this._chunkCount = bytesToUint16(decryptFileName.sublist(0, 2));
+    this._filePath = utf8.decode(decryptFileName.sublist(3));
 
     // Receive file and decrypt
     Uint8List decryptFileChunk;
@@ -281,6 +278,8 @@ class AesGcmChunk {
       (this._stream as IOSink).add(decryptFileChunk);
       // await this.file.writeAsBytes(decryptFileChunk, mode: FileMode.append);
     }
+
+    dv.close();
     this.close();
   }
 
@@ -312,19 +311,6 @@ class AesGcmChunk {
       ..init(false,
           AEADParameters(KeyParameter(this._key!), 128, data.iv, Uint8List(0)));
     return gcm.process(data.encryptedData);
-  }
-
-  /// Decrypts key for symmetric encryption with receiver's private key, and verify signature with sender's public key
-  Uint8List decryptVerifyMsg(Uint8List encryptedMsg, Uint8List signature,
-      RSAPublicKey senderPubKey, RSAPrivateKey receiverPrivKey) {
-    // Decrypt symmetric encryption key
-    Uint8List symKey = rsaDecrypt(encryptedMsg, receiverPrivKey);
-    // Verify symmetric encryption key signature
-    bool verify = rsaVerify(senderPubKey, encryptedMsg, signature);
-    if (!verify) {
-      logger.d("Error while decrypting symmetric encryption key");
-    }
-    return symKey;
   }
 
   Future<void> close() async {
