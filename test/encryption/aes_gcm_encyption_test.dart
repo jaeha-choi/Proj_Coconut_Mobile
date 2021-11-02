@@ -47,8 +47,8 @@ void main() {
 
     // ----- Encryption -----
     // Cat encrypts a file for Fox
-    String cat = "./testdata/keypair1/cat";
-    String fox = "./testdata/keypair2/fox.pub";
+    String cat = "./testdata/keypairCat/cat";
+    String fox = "./testdata/keypairFox/fox.pub";
 
     AesGcmChunk encrypt = encryptSetup("./testdata/short_txt.txt");
     EncryptSign es = EncryptSign(fox, cat);
@@ -68,8 +68,8 @@ void main() {
     });
 
     // ----- Decryption -----
-    cat = "./testdata/keypair1/cat.pub";
-    fox = "./testdata/keypair2/fox";
+    cat = "./testdata/keypairCat/cat.pub";
+    fox = "./testdata/keypairFox/fox";
 
     AesGcmChunk decrypt = decryptSetup();
     await decrypt.decrypt(controller.stream, cat, fox);
@@ -79,6 +79,29 @@ void main() {
     // ----- Decryption End -----
 
     // TODO: Use checksum to check if the input and the output is the same
+  });
+
+  test("encryption (output to console)", () async {
+    ByteStream test = ByteStream();
+
+    // ----- Encryption -----
+    // Cat encrypts a file for Fox
+    String cat = "./testdata/keypairCat/cat";
+    String fox = "./testdata/dog.pub";
+
+    AesGcmChunk encrypt = encryptSetup("./testdata/short_txt.txt");
+    EncryptSign es = EncryptSign(fox, cat);
+    int res = es.createSymKeys(1);
+    if (res < 1) {
+      // TODO: Error handling
+      print("error");
+    }
+
+    await encrypt.encrypt(test, es.keys[0]);
+    es.close();
+
+    print(test.toString());
+    test.close();
   });
 }
 

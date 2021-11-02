@@ -35,7 +35,7 @@ final logger = Logger(
 
 /// ChunkSize is a size of each file chunks in bytes.
 /// Should be less than max value of uint32 (4294967295)
-///	since the util package use unsigned 4 byts to represent the data size.
+///	since the util package use unsigned 4 bytes to represent the data size.
 const chunkSize = 16777216; // 2^24 bytes, about 16.7 MB
 const IvSize = 12;
 const SymKeySize = 32;
