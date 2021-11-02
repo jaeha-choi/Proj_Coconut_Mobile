@@ -230,7 +230,7 @@ class AesGcmChunk {
 
     // Update file name
     this._chunkCount = bytesToUint16(decryptFileName.sublist(0, 2));
-    this._filePath = utf8.decode(decryptFileName.sublist(3));
+    this._filePath = utf8.decode(decryptFileName.sublist(2));
 
     // Receive file and decrypt
     Uint8List decryptFileChunk;

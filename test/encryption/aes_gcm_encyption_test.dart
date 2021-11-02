@@ -103,6 +103,48 @@ void main() {
     print(test.toString());
     test.close();
   });
+
+  // test("decryption (output to console)", () async {
+  //   ByteStream test = ByteStream();
+  //
+  //   // TODO: Insert the data to test
+  //   Uint8List encryptedData = Uint8List.fromList(
+  //
+  //   );
+  //   print(encryptedData.length);
+  //   StreamController<Message> controller = StreamController<Message>();
+  //   while (encryptedData.length != 0) {
+  //     int size = bytesToUint32(encryptedData);
+  //     int errorCode = encryptedData[4];
+  //     int commandCode = encryptedData[5];
+  //     if (errorCode != 0) {
+  //       // if errorCode is not in Error class, then return unknown Error
+  //       if (!errorsList.asMap().containsKey(errorCode)) {
+  //         errorCode = UnknownCodeError.code;
+  //         print('something is wrong');
+  //       }
+  //     }
+  //     if (encryptedData.length == 0){
+  //       print('Fully added to Msg');
+  //     }
+  //     Message msg =
+  //     Message(size, errorsList[errorCode], commandsList[commandCode], encryptedData.sublist(6, size+6));
+  //     encryptedData = encryptedData.sublist(6 + size);
+  //     controller.add(msg);
+  //   }
+  //   // print(await controller.stream.length);
+  //
+  //   // ----- Decryption -----
+  //   String cat = "./testdata/keypairCat/cat.pub";
+  //   String fox = "./testdata/keypairFox/fox";
+  //
+  //   AesGcmChunk decrypt = decryptSetup();
+  //   await decrypt.decrypt(controller.stream, cat, fox);
+  //
+  //   test.close();
+  //   controller.close();
+  //   // ----- Decryption End -----
+  // });
 }
 
 void commHandlerSim(StreamController<Message> controller, Uint8List element) {
