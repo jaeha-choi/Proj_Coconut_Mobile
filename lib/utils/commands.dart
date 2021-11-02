@@ -23,10 +23,11 @@ const Command GetP2PKey = Command("GKEY", 8);
 // RequestPTP request peer to peer ip address
 const Command RequestPTP = Command("RPTP", 9);
 // HolePunchPING init command for p2p connection
-const Command HolePunchPING = Command("RPTP", 10);
+const Command GetLocalIP = Command("GLIP", 10);
 // HolePunchPONG init reply to "PING" command
-const Command HolePunchPONG = Command("RPTP", 11);
-const Command FileCommand = Command("FILE", 12);
+const Command HolePunchPING = Command("PING", 11);
+const Command HolePunchPONG = Command("PONG", 12);
+const Command FileCommand = Command("FILE", 13);
 
 const List<Command> commandsList = [
   Init,
@@ -39,6 +40,7 @@ const List<Command> commandsList = [
   RequestRelay,
   GetP2PKey,
   RequestPTP,
+  GetLocalIP,
   HolePunchPING,
   HolePunchPONG,
   FileCommand
