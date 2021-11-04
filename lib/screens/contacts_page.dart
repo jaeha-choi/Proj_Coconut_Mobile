@@ -27,7 +27,6 @@ class _Contacts extends State<Contacts> {
 
   _Contacts(this.client);
 
-  bool notReceiving = false;
   List<User> friendsList = <User>[];
   late SharedPreferences sharedPreferences;
 
@@ -52,7 +51,6 @@ class _Contacts extends State<Contacts> {
     bool isDone = state == ButtonState.done;
     bool isOnLine = state == ButtonState.init;
 
-    bool shouldDisplay = false;
 
     void changeStatus() {
       isOnLine = !isOnLine;
@@ -69,7 +67,7 @@ class _Contacts extends State<Contacts> {
         onPressed: () async {
           setState(() => state = ButtonState.loading);
           await Future.delayed(Duration(seconds: 2));
-          // await client.doGetAddCode(client);
+
           changeStatus();
           setState(() => state = ButtonState.init);
         },
@@ -84,12 +82,20 @@ class _Contacts extends State<Contacts> {
 
     Widget buildOnline() => ElevatedButton(
         onPressed: () async {
-          await client.doRemoveAddCode();
-          setState(() => state = ButtonState.loading);
-          await Future.delayed(Duration(seconds: 2));
-          changeStatus();
-          changeText();
-          setState(() => state = ButtonState.done);
+          if (client.addCode.length != 0) {
+            await client.doRemoveAddCode();
+            setState(() => state = ButtonState.loading);
+            await Future.delayed(Duration(seconds: 2));
+            changeStatus();
+            changeText();
+            setState(() => state = ButtonState.done);
+          } else {
+            setState(() => state = ButtonState.loading);
+            await Future.delayed(Duration(seconds: 2));
+            changeStatus();
+            changeText();
+            setState(() => state = ButtonState.done);
+          }
         },
         child: Text(
           'Online',
@@ -260,16 +266,16 @@ class _Contacts extends State<Contacts> {
 
                                 ElevatedButton(
                                   onPressed: () async {
-                                    if (isOnLine && !notReceiving) {
-                                      notReceiving = false;
+                                    if (isOnLine &&
+                                        client.addCode.length != 0) {
+                                      logger.i('remove');
                                       await client.doRemoveAddCode();
                                       await client.doGetAddCode();
-
-                                      // await client.doGetAddCode(client);
                                       changeText();
                                     }
-                                    if (isOnLine && notReceiving) {
-                                      notReceiving = false;
+                                    if (isOnLine &&
+                                        client.addCode.length == 0) {
+                                      logger.i('add');
                                       await client.doGetAddCode();
                                       changeText();
                                     }
@@ -286,9 +292,7 @@ class _Contacts extends State<Contacts> {
                                 ElevatedButton(
                                   onPressed: () async {
                                     if (isOnLine &&
-                                        !notReceiving &&
                                         client.addCode.length == 6) {
-                                      notReceiving = true;
                                       await client.doRemoveAddCode();
                                       changeText();
                                     }

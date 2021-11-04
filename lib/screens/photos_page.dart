@@ -127,7 +127,7 @@ class _Photos extends State<Photos> {
                         builder: (BuildContext context) => AlertDialog(
                           title: Text(
                               'Are you sure you want to send file to ${friendsList[index].fullName}'),
-                          content: const Text('AlertDialog description'),
+                          content: const Text(''),
                           actions: <Widget>[
                             TextButton(
                               onPressed: () => Navigator.pop(context, 'Cancel'),
