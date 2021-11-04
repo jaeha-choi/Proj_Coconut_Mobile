@@ -12,8 +12,6 @@ import 'error.dart';
 const int rsaKeySize = 4096;
 const int bufferSize = 4096;
 
-
-
 var logger = Logger(
   printer: PrettyPrinter(
       methodCount: 1,

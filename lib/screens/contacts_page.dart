@@ -27,7 +27,6 @@ class _Contacts extends State<Contacts> {
 
   _Contacts(this.client);
 
-  bool notReceiving = false;
   List<User> friendsList = <User>[];
   late SharedPreferences sharedPreferences;
 
@@ -52,7 +51,6 @@ class _Contacts extends State<Contacts> {
     bool isDone = state == ButtonState.done;
     bool isOnLine = state == ButtonState.init;
 
-    bool shouldDisplay = false;
 
     void changeStatus() {
       isOnLine = !isOnLine;
@@ -69,7 +67,7 @@ class _Contacts extends State<Contacts> {
         onPressed: () async {
           setState(() => state = ButtonState.loading);
           await Future.delayed(Duration(seconds: 2));
-          // await client.doGetAddCode(client);
+
           changeStatus();
           setState(() => state = ButtonState.init);
         },
@@ -84,12 +82,20 @@ class _Contacts extends State<Contacts> {
 
     Widget buildOnline() => ElevatedButton(
         onPressed: () async {
-          await client.doRemoveAddCode();
-          setState(() => state = ButtonState.loading);
-          await Future.delayed(Duration(seconds: 2));
-          changeStatus();
-          changeText();
-          setState(() => state = ButtonState.done);
+          if (client.addCode.length != 0) {
+            await client.doRemoveAddCode();
+            setState(() => state = ButtonState.loading);
+            await Future.delayed(Duration(seconds: 2));
+            changeStatus();
+            changeText();
+            setState(() => state = ButtonState.done);
+          } else {
+            setState(() => state = ButtonState.loading);
+            await Future.delayed(Duration(seconds: 2));
+            changeStatus();
+            changeText();
+            setState(() => state = ButtonState.done);
+          }
         },
         child: Text(
           'Online',
@@ -109,7 +115,7 @@ class _Contacts extends State<Contacts> {
     // int index = 0;
     double padding = 10;
     final sidePadding =
-    EdgeInsets.symmetric(horizontal: padding, vertical: padding);
+        EdgeInsets.symmetric(horizontal: padding, vertical: padding);
     return SafeArea(
         child: Scaffold(
             body: Container(
@@ -118,7 +124,7 @@ class _Contacts extends State<Contacts> {
                   children: <Widget>[
                     Padding(padding: sidePadding),
                     Row(
-                      // mainAxisAlignment: MainAxisAlignment.start,
+                        // mainAxisAlignment: MainAxisAlignment.start,
                         children: [
                           Padding(padding: sidePadding),
                           Text(
@@ -130,7 +136,7 @@ class _Contacts extends State<Contacts> {
                           Spacer(),
                           Container(
                               child:
-                              isOnLine ? buildOnline() : loading(isDone)),
+                                  isOnLine ? buildOnline() : loading(isDone)),
                           Padding(padding: sidePadding),
                         ]),
                     Row(
@@ -143,8 +149,6 @@ class _Contacts extends State<Contacts> {
                           child: Icon(
                             Icons.person_add,
                             size: 35,
-                            // TODO need to finish implementing
-                            // color: Colors.black,
                           ),
                           style: ElevatedButton.styleFrom(
                             primary: Colors.black54,
@@ -192,10 +196,10 @@ class _Contacts extends State<Contacts> {
                                 ),
                                 TextButton(
                                   onPressed: () async {
-                                    // .code == 0 means the server found recipient's add code
                                     List requestPubKey =
                                         await client.doRequestPubKey(
                                             addCode.text, fullName.text);
+                                    // .code == 0 means the server found recipient's add code
                                     if (requestPubKey.first.code == 0) {
                                       addUser(User(
                                           fullName: fullName.text,
@@ -205,13 +209,8 @@ class _Contacts extends State<Contacts> {
                                     } else {
                                       Navigator.pop(context, 'OK');
                                     }
-
                                     // addToContact();
                                   },
-                                  // }
-                                  // TODO run doRequestPubKey
-                                  // =>
-
                                   child: const Text('OK'),
                                   style: TextButton.styleFrom(
                                     side: BorderSide(
@@ -267,16 +266,16 @@ class _Contacts extends State<Contacts> {
 
                                 ElevatedButton(
                                   onPressed: () async {
-                                    if (isOnLine && !notReceiving) {
-                                      notReceiving = false;
+                                    if (isOnLine &&
+                                        client.addCode.length != 0) {
+                                      logger.i('remove');
                                       await client.doRemoveAddCode();
                                       await client.doGetAddCode();
-
-                                      // await client.doGetAddCode(client);
                                       changeText();
                                     }
-                                    if (isOnLine && notReceiving) {
-                                      notReceiving = false;
+                                    if (isOnLine &&
+                                        client.addCode.length == 0) {
+                                      logger.i('add');
                                       await client.doGetAddCode();
                                       changeText();
                                     }
@@ -293,9 +292,7 @@ class _Contacts extends State<Contacts> {
                                 ElevatedButton(
                                   onPressed: () async {
                                     if (isOnLine &&
-                                        !notReceiving &&
                                         client.addCode.length == 6) {
-                                      notReceiving = true;
                                       await client.doRemoveAddCode();
                                       changeText();
                                     }
