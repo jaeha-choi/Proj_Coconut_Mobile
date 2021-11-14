@@ -23,7 +23,7 @@ const Error NoAvailableAddCodeError = Error("no available add code error", 10);
 const Error ExistingConnError =
     Error("existing connection present in client struct", 11);
 const Error WritingMsgError = Error("can't write data to writer", 12);
-
+const Error PubKeyNotFoundError = Error("public key of peer not found", 13);
 const List<Error> errorsList = [
   NoError,
   UnknownCodeError,
@@ -37,5 +37,6 @@ const List<Error> errorsList = [
   ReceiverNotAvailable,
   NoAvailableAddCodeError,
   ExistingConnError,
-  WritingMsgError
+  WritingMsgError,
+  PubKeyNotFoundError
 ];

@@ -9,7 +9,6 @@ import 'package:logger/logger.dart';
 import 'package:mobile_app/encryption/rsa.dart';
 import 'package:mobile_app/utils/contact_class.dart';
 import 'package:mobile_app/utils/util.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'utils/commands.dart';
@@ -48,6 +47,7 @@ class Client {
   RSAPrivateKey privKey;
   String pubKeyBlock;
   String addCode;
+  late String peerKey;
   Map<String, StreamController<Message>> mapOfChannel;
 
   Client({
@@ -132,6 +132,7 @@ class Client {
   /// getResults get called every feature calls to check potential error
   Future<Error> getResult(String command, StreamIterator<Message> iter) async {
     Message msg = await readBytes(iter);
+    print(msg.errorCode);
     this.mapOfChannel.remove(command);
     return msg.errorCode;
   }
@@ -193,6 +194,49 @@ class Client {
     }
   }
 
+  // // signals the relay server that a client wants to connect to another client
+  // Future<Error> doRequestP2P(Uint8List pkHash) async {
+  //   final Command comm = RequestPTP;
+  //   try {
+  //     this.mapOfChannel[comm.string] = StreamController<Message>();
+  //     final StreamIterator<Message> iter =
+  //     StreamIterator<Message>(this.mapOfChannel[comm.string]!.stream);
+  //
+  //
+  //     // 0. Write command
+  //     if (writeString(this.conn, comm.string, comm, NoError) == -1) {
+  //       logger.d("Error while sending command (do Request P2P to the server");
+  //     }
+  //     // 1a.  Read error code for finding tx client
+  //     Message msg = await readBytes(iter);
+  //     if (msg.errorCode.code !=0){
+  //       return errorsList[msg.errorCode.code];
+  //     }
+  //     // 2a. Write rx public key hash
+  //     if(writeBytes(this.conn, pkHash, comm, NoError) ==-1) {
+  //       logger.d("Error while writing rx public key hash");
+  //       // return Error
+  //     }
+  //
+  //     this.peerKey = utf8.decode(pkHash);
+  //
+  //     // 3a. Read error code for finding rx client
+  //     msg = await readBytes(iter);
+  //     if (msg.errorCode != 0){
+  //       logger.d("Error in 3a");
+  //       return errorsList[msg.errorCode.code];
+  //     }
+  //
+  //     // 4a. Receive rx localIP:localPort to tx
+  //     // Message peerLocalAddr =this.mapOfChannel[comm.string]!.stream;
+  //
+  //
+  //   }
+  //   catch (e){
+  //     logger.d("Error in ");
+  //   }
+  // }
+
   /// Sends the recipient's AddCode to the server to receive recipient's pubKey.
   /// If it is successful, it saves recipient information locally using _save()
   /// Returns [Error] clientNotFoundError if no client found
@@ -249,7 +293,47 @@ class Client {
     }
     Message msg =
         Message(size, errorsList[errorCode], commandsList[commandCode], data);
-    this.mapOfChannel[commandsList[commandCode].string]!.add(msg);
+    if (this.mapOfChannel.containsKey(commandsList[commandCode].string)) {
+      this.mapOfChannel[commandsList[commandCode].string]!.add(msg);
+    }
+    // else{ // commandsList[commandCode].string  not in this.mapOfChannel:
+    //   handleRequestP2P() // This function is async
+    // }
+  }
+
+  // disconnects this.client from the server
+  Future<Error> disconnect() async {
+    try {
+      logger.i("Disconnecting....");
+      // calling doQuit
+      Error err = await this.doQuit();
+      if (err.code != 0) {
+        logger.d("Task is not complete");
+        return TaskNotCompleteError;
+      }
+      // Timer allows graceful shutdown for client.conn
+      await Future.delayed(Duration(seconds: 1));
+
+      this.conn.close();
+      logger.i('Disconnected');
+      return NoError;
+    } catch (e) {
+      logger.d("Error while disconnecting from the server $e");
+      return TaskNotCompleteError;
+    }
+  }
+
+  // Sends the relay server to unregister this client
+  Future<Error> doQuit() async {
+    final Command comm = Quit;
+    // Creates map to store data from the server
+    this.mapOfChannel[comm.toString()] = StreamController<Message>();
+    final StreamIterator<Message> iter =
+        StreamIterator<Message>(this.mapOfChannel[comm.string]!.stream);
+    if (writeBytes(this.conn, Uint8List(0), comm, NoError) == -1) {
+      logger.d("Error while quitting");
+    }
+    return this.getResult(comm.string, iter);
   }
 
   Future<void> close() async {
@@ -261,8 +345,10 @@ class Client {
 /// Returns null upon error.
 Future<Client> newClient() async {
   // Open RSA keys, if the user already got one
-  Directory appDocDir = await getApplicationDocumentsDirectory();
-  String appDocPath = appDocDir.path;
+  // Directory appDocDir = await getApplicationDocumentsDirectory();
+  // String appDocPath = appDocDir.path;
+  String appDocPath = './testdata';
+
   bool isPub = File('$appDocPath/key.pub').existsSync();
   bool isPriv = File('$appDocPath/key.priv').existsSync();
 
@@ -292,4 +378,6 @@ Future<void> main() async {
   Logger.level = Level.debug;
   Client client = await newClient();
   await client.connect();
+  Client client2 = await newClient();
+  await client2.connect();
 }
