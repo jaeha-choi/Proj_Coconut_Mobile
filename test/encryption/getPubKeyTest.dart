@@ -33,25 +33,38 @@ class ByteStream implements IOSink {
   noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+/// Creates new [Client] and return it.
+/// Returns null upon error.
+Future<Client> newClientForDuncan() async {
+  // Open RSA keys, if the user already got one
+  final pair = CryptoUtils.generateRSAKeyPair(keySize: 4096);
+  // Examine the generated key-pair
+  final rsaPublic = pair.publicKey as RSAPublicKey;
+  final rsaPrivate = pair.privateKey as RSAPrivateKey;
+
+  String pubKey = CryptoUtils.encodeRSAPublicKeyToPemPkcs1(rsaPublic);
+  return new Client(
+    serverIP: "127.0.0.1",
+    serverPort: 9129,
+    // conn: null,
+    privKey: rsaPrivate,
+    pubKeyBlock: pubKey,
+    addCode: "",
+    mapOfChannel: new Map<String, StreamController<Message>>(),
+  );
+}
+
 void main() async {
   // Using newClient() in this file is necessary, if you want to test without UI
   Client robin = await newClient();
   await robin.connect();
   await robin.doGetAddCode();
-  await robin.disconnect();
-  // await robin.getResult(command, iter)
-  // Client jaeha = await newClient();
-  // jaeha.connect();
+  Client duncan = await newClientForDuncan();
+  await duncan.connect();
+  await duncan.doGetAddCode();
+  await robin.doRequestPubKey(duncan.addCode, 'fullName');
 
-  RSAPublicKey robinPub =
-      CryptoUtils.rsaPublicKeyFromPemPkcs1(robin.pubKeyBlock);
-  // create robin public key
-  String jaehaPubStr = File('./testdata/jaehaPub.pub').readAsStringSync();
-
-  RSAPublicKey jaehaPub = CryptoUtils.rsaPublicKeyFromPemPkcs1(jaehaPubStr);
-
-  String fileName = "./testdata/short_txt.txt";
-  ByteStream test = ByteStream();
-  // await Future.delayed(Duration(minutes: 1));
+  await Future.delayed(Duration(minutes: 1));
+  // await robin.disconnect();
   print('here');
 }

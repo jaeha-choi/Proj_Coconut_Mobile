@@ -19,11 +19,6 @@ class User {
   }
 }
 
-// class UsersList {
-//   List<User> UsersList;
-//
-//   UsersList({required this.UsersList});
-// }
 
 class UsersTile extends StatelessWidget {
   UsersTile(this._contact);
@@ -36,7 +31,6 @@ class UsersTile extends StatelessWidget {
       leading: Icon(Icons.person),
       title: Text(_contact.fullName),
       subtitle: Text(_contact.pubKey.toString().substring(0, 5)),
-      // trailing: PersonHandIcon(_person.isLeftHand),
     );
   }
 }

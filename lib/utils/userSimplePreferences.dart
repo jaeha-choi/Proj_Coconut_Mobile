@@ -7,12 +7,6 @@ class UserSimplePreferences {
   late String name;
   late String pubKey;
 
-//
-//   UserSimplePreferences(
-//     this.name,
-//     this.pubKey,
-// );
-
   static Future init() async {
     _preferences = await SharedPreferences.getInstance();
   }
@@ -37,14 +31,6 @@ class UserSimplePreferences {
   void saveData(List<UserSimplePreferences> list) {
     List<String> spList =
         list.map((item) => json.encode(item.toMap())).toList();
-
-    print(spList);
+    // print(spList);
   }
-
-// static String? getUsers() {
-//   _preferences!.getString(_key);
-// }
-
-// static Future setUsers(List<String> users) async => await _preferences.setString(key, value)
-// }
 }

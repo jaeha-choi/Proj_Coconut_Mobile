@@ -27,7 +27,11 @@ class _Contacts extends State<Contacts> {
 
   _Contacts(this.client);
 
-  List<User> friendsList = <User>[];
+  List<User> friendsList = <User>[
+    User(fullName: 'Robin Seo', pubKey: 'asnfd92134812hionqwd90ui'),
+    User(fullName: 'Duncan Spani', pubKey: 'djaqbr'),
+    User(fullName: 'Jaeha Choi', pubKey: 'rtjop124')
+  ];
   late SharedPreferences sharedPreferences;
 
   @override
@@ -155,10 +159,6 @@ class _Contacts extends State<Contacts> {
                             fixedSize: Size(size.width - 50, 45),
                             shape: StadiumBorder(),
                           ),
-                          // OutlinedButton.styleFrom(
-                          //   backgroundColor: Colors.black12,
-                          //   shape: RoundedRectangleBorder(),
-                          //   padding: EdgeInsets.all(14),
 
                           onPressed: () => showDialog(
                             context: context,
@@ -196,21 +196,31 @@ class _Contacts extends State<Contacts> {
                                 ),
                                 TextButton(
                                   onPressed: () async {
-                                    List requestPubKey =
-                                        await client.doRequestPubKey(
-                                            addCode.text, fullName.text);
-                                    // .code == 0 means the server found recipient's add code
-                                    if (requestPubKey.first.code == 0) {
-                                      addUser(User(
-                                          fullName: fullName.text,
-                                          pubKey: requestPubKey.last));
-                                      Navigator.pop(context, 'OK');
-                                      setState(() {});
-                                    } else {
-                                      Navigator.pop(context, 'OK');
-                                    }
-                                    // addToContact();
+                                    addUser(User(
+                                        fullName: fullName.text,
+                                        pubKey: 'asfqr'));
+                                    Navigator.pop(context, 'OK');
+                                    setState(() {});
                                   },
+
+                                  // onPressed: () async {
+                                  // List requestPubKey =
+                                  //     await client.doRequestPubKey(
+                                  //         addCode.text, fullName.text);
+                                  // .code == 0 means the server found recipient's add code
+                                  // if (requestPubKey.first.code == 0) {
+                                  //   addUser(User(
+                                  //       fullName: fullName.text,
+                                  //       pubKey: requestPubKey.last));
+                                  //   Navigator.pop(context, 'OK');
+                                  //   setState(() {});
+                                  //     await client.doRequestPubKey(addCode.text, fullName.text);
+                                  // } ,
+                                  // else {
+                                  //   Navigator.pop(context, 'OK');
+                                  // }
+                                  // addToContact();
+                                  // },
                                   child: const Text('OK'),
                                   style: TextButton.styleFrom(
                                     side: BorderSide(
@@ -350,12 +360,6 @@ class _Contacts extends State<Contacts> {
       ),
       subtitle: Text(item.pubKey.toString().substring(0, 5)),
     );
-    // trailing: Icon(item.completed
-    //     ? Icons.check_box
-    //     : Icons.check_box_outline_blank,
-    //   key: Key('completed-icon-$index'),
-    // ),
-    // );
   }
 
   void send() {

@@ -9,6 +9,7 @@ import 'package:logger/logger.dart';
 import 'package:mobile_app/encryption/rsa.dart';
 import 'package:mobile_app/utils/contact_class.dart';
 import 'package:mobile_app/utils/util.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'utils/commands.dart';
@@ -17,7 +18,7 @@ import 'utils/error.dart';
 final logger = Logger(
   printer: PrettyPrinter(
       noBoxingByDefault: true,
-      // number of method calls to be displayed
+      // number of method calls to be displayedhjkb
       methodCount: 0,
       // number of method calls if stacktrace is provided
       errorMethodCount: 3,
@@ -132,7 +133,7 @@ class Client {
   /// getResults get called every feature calls to check potential error
   Future<Error> getResult(String command, StreamIterator<Message> iter) async {
     Message msg = await readBytes(iter);
-    print(msg.errorCode);
+    // print(msg.errorCode);
     this.mapOfChannel.remove(command);
     return msg.errorCode;
   }
@@ -194,6 +195,29 @@ class Client {
     }
   }
 
+  /// handleGetPubKey is called when the relay server requests this client's public key
+  Future<Error> handleGetPubkey() async {
+    logger.i("Enter handleGetPubkey");
+    final Command comm = RequestPubKey;
+    this.mapOfChannel[comm.string] = StreamController<Message>();
+    final StreamIterator<Message> iter =
+        StreamIterator<Message>(this.mapOfChannel[comm.string]!.stream);
+    try {
+      if (writeString(this.conn, comm.string, Pause, NoError) == -1) {
+        logger.d("Error while sending command(pause) to the server");
+      }
+      // TODO Check if im doing it right
+      // I send my pubkeyBlock?
+      if (writeString(this.conn, this.pubKeyBlock, comm, NoError) == -1) {
+        logger.d("Error while sending pubkey to the server");
+      }
+      return await getResult(comm.string, iter);
+    } catch (e) {
+      logger.d("Error in handleGetPubKey: $e");
+      return GeneralClientError;
+    }
+  }
+
   // // signals the relay server that a client wants to connect to another client
   // Future<Error> doRequestP2P(Uint8List pkHash) async {
   //   final Command comm = RequestPTP;
@@ -240,8 +264,10 @@ class Client {
   /// Sends the recipient's AddCode to the server to receive recipient's pubKey.
   /// If it is successful, it saves recipient information locally using _save()
   /// Returns [Error] clientNotFoundError if no client found
-  Future<List> doRequestPubKey(String recipientAddCode, String fullName) async {
-    final Command comm = GetPubKey;
+  Future<Error> doRequestPubKey(
+      String recipientAddCode, String fullName) async {
+    logger.d("requesting pubkey $recipientAddCode");
+    final Command comm = RequestPubKey;
     // Creates map to store data from the server
     this.mapOfChannel[comm.toString()] = StreamController<Message>();
     final StreamIterator<Message> iter =
@@ -258,21 +284,28 @@ class Client {
       Message msg = await readBytes(iter);
       // Check error checking
       if (msg.errorCode.code != 0) {
-        return [ClientNotFoundError, ''];
+        return ClientNotFoundError;
       }
       String pubKeyString = utf8.decode(msg.data);
-      // _save(fullName, pubKeyString);
-      return [await getResult(comm.string, iter), pubKeyString];
+      //
+      Message msg2 = await readBytes(iter);
+
+      // Message msg3 = await readBytes(iter);
+      // print(utf8.decode(msg3.data));
+
+      // print([await getResult(comm.string, iter), pubKeyString]);
+      return await getResult(comm.string, iter);
     } catch (e) {
       logger.e("Error in doRequestPubKey: $e");
       this.mapOfChannel.remove(comm.string);
-      return [ClientNotFoundError, ''];
+      return ClientNotFoundError;
     }
   }
 
   /// Command Handler gets called Right after connect to the server
   /// Command Handler will write data to [client.mapOfChannel]
   void commandHandler(Uint8List inputData) {
+    // print(inputData);
     int size = -1;
     int errorCode = UnknownCodeError.code;
     int commandCode = inputData[5];
@@ -295,6 +328,12 @@ class Client {
         Message(size, errorsList[errorCode], commandsList[commandCode], data);
     if (this.mapOfChannel.containsKey(commandsList[commandCode].string)) {
       this.mapOfChannel[commandsList[commandCode].string]!.add(msg);
+    }
+    final Command comm = commandsList[commandCode];
+    if (comm == RequestPubKey) {
+      this.handleGetPubkey();
+    } else if (comm == Pause) {
+      print("PAUSE");
     }
     // else{ // commandsList[commandCode].string  not in this.mapOfChannel:
     //   handleRequestP2P() // This function is async
@@ -345,9 +384,9 @@ class Client {
 /// Returns null upon error.
 Future<Client> newClient() async {
   // Open RSA keys, if the user already got one
-  // Directory appDocDir = await getApplicationDocumentsDirectory();
-  // String appDocPath = appDocDir.path;
-  String appDocPath = './testdata';
+  Directory appDocDir = await getApplicationDocumentsDirectory();
+  String appDocPath = appDocDir.path;
+  // String appDocPath = './testdata';
 
   bool isPub = File('$appDocPath/key.pub').existsSync();
   bool isPriv = File('$appDocPath/key.priv').existsSync();
@@ -374,10 +413,3 @@ Future<Client> newClient() async {
   );
 }
 
-Future<void> main() async {
-  Logger.level = Level.debug;
-  Client client = await newClient();
-  await client.connect();
-  Client client2 = await newClient();
-  await client2.connect();
-}

@@ -8,9 +8,7 @@ import 'photos_page.dart';
 
 class FrontPage extends StatefulWidget {
   const FrontPage({Key? key}) : super(key: key);
-
   // FrontPage({required Client? client}) : this.client = client;
-
   @override
   State<StatefulWidget> createState() => _FrontPageState();
 }

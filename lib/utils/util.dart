@@ -91,7 +91,6 @@ Future<Message> readBytes(StreamIterator<Message> iter) async {
   if (!isDataAvailable) {
     // throw new Exception("no data available from the server");
     // what is Error ReceiverNotFound from Error class
-    print('ohno');
     return Message(0, GeneralClientError, Init, Uint8List(0));
   }
   return iter.current;
@@ -106,7 +105,7 @@ Future<List> writeBinary(RawSocket conn, File file) async {
   var sizeInByte = uint32ToBytes(await file.length());
   try {
     conn.write(sizeInByte);
-    print(file.readAsBytes());
+    // print(file.readAsBytes());
     print("reading file size (Bytes):  ${file.readAsBytes()}");
     conn.write(await file.readAsBytes());
   } catch (error) {

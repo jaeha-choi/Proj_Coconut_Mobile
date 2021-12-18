@@ -21,9 +21,7 @@ class Photos extends StatefulWidget {
 
 class _Photos extends State<Photos> {
   Client client;
-
   _Photos(this.client);
-
   late List<File> filePath;
   final files = new Map();
 
@@ -61,7 +59,7 @@ class _Photos extends State<Photos> {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       ElevatedButton(
-                        child: Text('Select Files',
+                        child: Text('Select Photos',
                             style: TextStyle(fontSize: 24)),
                         onPressed: getImage,
                       ),
