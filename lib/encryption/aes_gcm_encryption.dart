@@ -30,7 +30,7 @@ final logger = Logger(
       // Print an emoji for each log message
       printEmojis: true,
       // Should each log print contain a timestamp
-      printTime: false),
+      printTime: true),
 );
 
 /// ChunkSize is a size of each file chunks in bytes.
@@ -77,8 +77,7 @@ class AesGcmChunk {
   // chunkNum is uInt16 check
   int _chunkNum;
 
-  AesGcmChunk._(
-      this._key,
+  AesGcmChunk._(this._key,
       this.file,
       this._isEncrypt,
       this._stream,
@@ -88,8 +87,8 @@ class AesGcmChunk {
       this._offset,
       this._chunkNum);
 
-  /// encrypt encrypts opened file with [symKey], then write the result
-  /// to [writer]. [SymKey] must remain open until the end of this operation.
+  /// Opens file with [symKey], then write the result
+  /// to writer. [SymKey] must remain open until the end of this operation.
   ///
   /// writer: output to write to (socket, file, etc)
   /// symKey: SymKey object that contains a symmetric key and encrypted key,
@@ -139,7 +138,7 @@ class AesGcmChunk {
     this.close();
   }
 
-  /// _encryptChunk encrypts portion ("chunk") of the file and return it as
+  /// Encrypts portion ("chunk") of the file and return it as
   /// [_EncryptedData]. Current chunk number is appended in the
   /// beginning (first two bytes). IV is returned in a plaintext.
   Future<_EncryptedData> _encryptChunk(int chunkSize) async {

@@ -23,7 +23,7 @@ final logger = Logger(
       // Print an emoji for each log message
       printEmojis: true,
       // Should each log print contain a timestamp
-      printTime: false),
+      printTime: true),
 );
 
 /// Encrypt the given [message] using the given RSA [publicKey].

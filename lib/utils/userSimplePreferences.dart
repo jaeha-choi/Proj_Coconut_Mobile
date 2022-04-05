@@ -2,16 +2,12 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// https://pub.dev/packages/shared_preferences
 class UserSimplePreferences {
   static SharedPreferences? _preferences;
   late String name;
   late String pubKey;
 
-//
-//   UserSimplePreferences(
-//     this.name,
-//     this.pubKey,
-// );
 
   static Future init() async {
     _preferences = await SharedPreferences.getInstance();
@@ -40,11 +36,4 @@ class UserSimplePreferences {
 
     print(spList);
   }
-
-// static String? getUsers() {
-//   _preferences!.getString(_key);
-// }
-
-// static Future setUsers(List<String> users) async => await _preferences.setString(key, value)
-// }
 }

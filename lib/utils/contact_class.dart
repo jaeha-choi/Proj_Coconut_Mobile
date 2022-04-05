@@ -19,11 +19,6 @@ class User {
   }
 }
 
-// class UsersList {
-//   List<User> UsersList;
-//
-//   UsersList({required this.UsersList});
-// }
 
 class UsersTile extends StatelessWidget {
   UsersTile(this._contact);

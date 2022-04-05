@@ -70,8 +70,9 @@ class Client {
 
   List<User> friendsList = <User>[];
 
-  /// Connects to the server
-  /// Returns [Error] ExistingConnError if there is error in connection
+  /// Connects to the server.
+  ///
+  /// Throws an [Error] ExistingConnError if there is error in connection.
   Future<Error> connect() async {
     try {
       logger.i('Connecting....');
@@ -82,9 +83,9 @@ class Client {
             true, // TODO: Change once dev. is done
       );
 
-      // Add listen method
+      // commandHandler will get call if there is a valid connection.
       this.conn.listen((Uint8List data) {
-        // handle data from the server
+        // handles data from the server.
         commandHandler(data);
       });
 
@@ -99,29 +100,33 @@ class Client {
     return await doInit();
   }
 
-  /// Send initialization code [pubKeyHash] to the server
+  /// Sends initialization code [pubKeyHash] to the server.
   Future<Error> doInit() async {
     final Command comm = Init;
-    // Creates map of command
+    // Creates map of command to receive the result from the server.
+    //
+    // ex) {command: string: StreamController<Message> : StreamController}
     this.mapOfChannel[comm.string] = StreamController<Message>();
 
     final StreamIterator<Message> iter =
         StreamIterator<Message>(this.mapOfChannel[comm.string]!.stream);
+
     Uint8List pubKeyHash = pemToSha256(this.pubKeyBlock);
-    // Send pubKeyHash to the server
+    // Sends pubKeyHash to the server.
     if (writeBytes(this.conn, pubKeyHash, comm, NoError) == -1) {
       logger.d("Error in doInit()");
-      // Remove channel if error is encountered
+      // Removes channel if error is encountered.
       this.mapOfChannel.remove(comm.string);
       return WritingMsgError;
     }
-    // Send local address
+    // Sends a local address.
     var temp = await NetworkInterface.list();
     // Currently, we're just assuming the first element to have the
     // correct local ip address
     String ipPort = temp[0].addresses[0].address + ":${this.conn.port}";
     if (writeString(this.conn, ipPort, comm, NoError) == -1) {
       logger.d("Error in doInit()");
+      // Removes channel if error is encountered.
       this.mapOfChannel.remove(comm.string);
       return WritingMsgError;
     }
@@ -129,6 +134,7 @@ class Client {
   }
 
   /// Returns error code from the server
+  ///
   /// getResults get called every feature calls to check potential error
   Future<Error> getResult(String command, StreamIterator<Message> iter) async {
     Message msg = await readBytes(iter);
@@ -136,7 +142,8 @@ class Client {
     return msg.errorCode;
   }
 
-  /// Remove Add Code
+  /// Removes Add Code.
+  ///
   /// It removes AddCode from server, if it success return [Error] NoError
   /// otherwise return [Error] UnknownError
   Future<Error> doRemoveAddCode() async {
@@ -146,11 +153,11 @@ class Client {
       this.mapOfChannel[comm.string] = StreamController<Message>();
       final StreamIterator<Message> iter =
           StreamIterator<Message>(this.mapOfChannel[comm.string]!.stream);
-      // Send the remove add code command
+      // Sends the remove add code command
       if (writeString(this.conn, comm.string, comm, NoError) == -1) {
         logger.d("Error while sending command(Remove Add Code) to the server");
       }
-      // send the add code that you want to erase
+      // Sends the add code that you want to erase
       if (writeString(this.conn, this.addCode, comm, NoError) == -1) {
         logger.d("Error while sending free add code to the server");
       }
@@ -167,6 +174,7 @@ class Client {
   }
 
   /// Sends command(Get Add Code)
+  ///
   /// Returns [Error] GeneralClientError if there is no Add code available
   Future<Error> doGetAddCode() async {
     final Command comm = GetAddCode;
@@ -194,16 +202,17 @@ class Client {
   }
 
   /// Sends the recipient's AddCode to the server to receive recipient's pubKey.
-  /// If it is successful, it saves recipient information locally using _save()
-  /// Returns [Error] clientNotFoundError if no client found
+  ///
+  /// TODO If it is successful, it saves recipient information locally using _save().
+  /// Returns [Error] clientNotFoundError if no client found.
   Future<List> doRequestPubKey(String recipientAddCode, String fullName) async {
     final Command comm = GetPubKey;
     // Creates map to store data from the server
     this.mapOfChannel[comm.toString()] = StreamController<Message>();
     final StreamIterator<Message> iter =
         StreamIterator<Message>(this.mapOfChannel[comm.string]!.stream);
-    // Send the command to the server
     try {
+      // Sends the command to the server.
       if (writeBytes(this.conn, Uint8List(0), comm, NoError) == -1) {
         logger
             .d("Error while sending command(request public key) to the server");
@@ -226,7 +235,8 @@ class Client {
     }
   }
 
-  /// Command Handler gets called Right after connect to the server
+  /// Command Handler gets called Right after connect to the server.
+  ///
   /// Command Handler will write data to [client.mapOfChannel]
   void commandHandler(Uint8List inputData) {
     int size = -1;

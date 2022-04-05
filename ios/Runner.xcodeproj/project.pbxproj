@@ -30,6 +30,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0079BC0F27CF436E00E640C7 /* ten.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = ten.a; path = lib/ten.a; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
@@ -64,6 +65,7 @@
 		55F78E25D94B1A2DC74F0CF7 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				0079BC0F27CF436E00E640C7 /* ten.a */,
 				FBDCA911437E6C87740B953D /* Pods_Runner.framework */,
 			);
 			name = Frameworks;

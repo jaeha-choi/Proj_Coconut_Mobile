@@ -369,7 +369,7 @@ class _Contacts extends State<Contacts> {
 
   initSharedPreferences() async {
     sharedPreferences = await SharedPreferences.getInstance();
-    loadData();
+    _loadData();
   }
 
   void addUser(User item) {
@@ -384,7 +384,7 @@ class _Contacts extends State<Contacts> {
     print(spList);
   }
 
-  void loadData() {
+  void _loadData() {
     List<String> spList = sharedPreferences.getStringList('list')!;
     friendsList =
         spList.map((item) => User.fromMap(json.decode(item))).toList();

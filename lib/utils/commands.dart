@@ -11,7 +11,6 @@ class Command {
 
 const Command Init = Command("INIT", 0);
 const Command Quit = Command("QUIT", 1);
-
 const Command RequestPubKey = Command("RPUB", 2);
 const Command GetPubKey = Command("GPUB", 3);
 const Command RemoveAddCode = Command("RADC", 4);

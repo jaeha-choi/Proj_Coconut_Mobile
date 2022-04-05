@@ -30,7 +30,7 @@ var logger = Logger(
 
 /// ----Conversions----
 
-/// Convert integer to byte
+/// Converts [int] to [Uint8List]byte,
 Uint8List? convertIntToByte(value, Endian order, int bytesSize) {
   try {
     final kMaxBytes = 8;
@@ -48,7 +48,7 @@ Uint8List? convertIntToByte(value, Endian order, int bytesSize) {
   }
 }
 
-/// Convert 4 bytes to unsigned int32
+/// Convert 4 bytes to unsigned int32.
 int bytesToUint32(Uint8List value, [int offsetInBytes = 0]) {
   // var buffer = value.buffer;
   // var byteData = new ByteData.view(buffer, offsetInBytes, 4);
@@ -74,50 +74,24 @@ Uint8List uint16ToBytes(int value) =>
 Uint8List uint32ToBytes(int value) =>
     Uint8List(4)..buffer.asByteData().setUint32(0, value, Endian.big);
 
-// // getFilePath calls getApplication Documents Directory. This comes from the path_provider package.
-// // This will get whatever the common documents directory is for the platform that we are using.
-// // returns path to the documents directory as a String
-// Future<String> getFilePath() async {
-//   Directory appDocumentsDirectory = await getApplicationDocumentsDirectory(); // 1
-//   String appDocumentsPath = appDocumentsDirectory.path; // 2
-//   String filePath = '$appDocumentsPath/demoTextFile.txt'; // 3
-//
-//   return filePath;
-// }
-
+/// Reads the data from stream.
+///
 Future<Message> readBytes(StreamIterator<Message> iter) async {
   // Wait for the msg
   bool isDataAvailable = await iter.moveNext();
   if (!isDataAvailable) {
     // throw new Exception("no data available from the server");
     // what is Error ReceiverNotFound from Error class
-    print('ohno');
+    print('oh no!!!!');
     return Message(0, GeneralClientError, Init, Uint8List(0));
   }
   return iter.current;
 }
 
-// writeBinary opens file and write byte data to writer
-//
-// returns <total length of bytes to sent, error>
-// total length of bytes = each file size
-// file size cannot exceed max value of uint32
-Future<List> writeBinary(RawSocket conn, File file) async {
-  var sizeInByte = uint32ToBytes(await file.length());
-  try {
-    conn.write(sizeInByte);
-    print(file.readAsBytes());
-    print("reading file size (Bytes):  ${file.readAsBytes()}");
-    conn.write(await file.readAsBytes());
-  } catch (error) {
-    logger.e("Unknown error in send_bin: $error");
-    return [0, false];
-  }
-  return [sizeInByte, true];
-}
-
+/// Writes [String] to a writer.
+///
+/// Converts [String] msg to [Uint8List].
 int writeString(IOSink writer, String msg, Command command, Error error) {
-  // Chang command to Uint8Lsit
   if (msg.isEmpty) {
     logger.e("msg cannot be empty");
     return -1;
@@ -126,8 +100,8 @@ int writeString(IOSink writer, String msg, Command command, Error error) {
       writer, Uint8List.fromList(utf8.encode(msg)), command, error);
 }
 
-/// WriteString writes message to writer
-/// length of message cannot exceed BufferSize
+/// Writes message to a writer.
+///
 /// returns length of total bytes sent. Return -1 on error.
 int writeBytes(IOSink writer, Uint8List bytes, Command command, Error error) {
   try {
@@ -147,9 +121,4 @@ int writeBytes(IOSink writer, Uint8List bytes, Command command, Error error) {
     logger.e('Error in writeString() :$error');
     return -1;
   }
-}
-
-void main() {
-  int s = 2;
-  print(convertIntToByte(s, Endian.big, 1));
 }
